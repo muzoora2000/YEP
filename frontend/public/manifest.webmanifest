@@ -1,0 +1,21 @@
+{
+  "name": "YEP - Youth Digital Empowerment and Virtual Exchange Platform",
+  "short_name": "YEP",
+  "description": "Virtual exchanges, impact projects, mentoring and verifiable certificates for young people in East Africa.",
+  "lang": "en",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f8fafc",
+  "theme_color": "#4f46e5",
+  "categories": ["education", "social"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

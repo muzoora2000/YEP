@@ -1,0 +1,22 @@
+# Development profile (default).
+# Schema is created/updated from the JPA entity model (spring.jpa.hibernate.ddl-auto=update).
+# Point DATABASE_URL at a local Postgres, or keep the default H2 in PostgreSQL mode.
+spring:
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/yep}
+    username: ${DATABASE_USERNAME:yep}
+    password: ${DATABASE_PASSWORD:yep}
+    hikari:
+      maximum-pool-size: 5
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+  flyway:
+    enabled: false
+
+yep:
+  cors:
+    allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000}
+  cookie:
+    secure: false
