@@ -77,7 +77,7 @@ function DashboardContent() {
   return (
     <>
       <PageHeader
-        title={`Karibu, ${user?.fullName?.split(' ')[0] ?? 'there'}`}
+        title={`WELCOME, ${user?.fullName?.split(' ')[0] ?? 'there'}`}
         description={
           isStaff
             ? 'Your facilitation, assessment and moderation workspace.'
