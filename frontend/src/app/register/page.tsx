@@ -11,7 +11,7 @@ import { useAuth } from '@/lib/auth';
 import { registerSchema, type RegisterValues } from '@/lib/schemas';
 import { Alert } from '@/components/ui/Feedback';
 import { Button } from '@/components/ui/Button';
-import { Checkbox, Field, Input, Select, Textarea } from '@/components/ui/Form';
+import { Checkbox, Field, Input, PasswordInput, Select, Textarea } from '@/components/ui/Form';
 
 const roleOptions = [
   { value: 'PARTICIPANT', label: 'Participant - join exchanges and teams' },
@@ -112,9 +112,8 @@ export default function RegisterPage() {
           </Field>
 
           <Field label="Password" htmlFor="password" error={errors.password?.message} required>
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               autoComplete="new-password"
               invalid={!!errors.password}
               {...register('password')}
@@ -122,9 +121,8 @@ export default function RegisterPage() {
           </Field>
 
           <Field label="Confirm password" htmlFor="confirmPassword" error={errors.confirmPassword?.message} required>
-            <Input
+            <PasswordInput
               id="confirmPassword"
-              type="password"
               autoComplete="new-password"
               invalid={!!errors.confirmPassword}
               {...register('confirmPassword')}

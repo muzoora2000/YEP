@@ -11,7 +11,7 @@ import { useAuth } from '@/lib/auth';
 import { loginSchema, type LoginValues } from '@/lib/schemas';
 import { Alert } from '@/components/ui/Feedback';
 import { Button } from '@/components/ui/Button';
-import { Field, Input } from '@/components/ui/Form';
+import { Field, Input, PasswordInput } from '@/components/ui/Form';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -62,9 +62,8 @@ export default function LoginPage() {
         </Field>
 
         <Field label="Password" htmlFor="password" error={errors.password?.message} required>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="current-password"
             invalid={!!errors.password}
             {...register('password')}
