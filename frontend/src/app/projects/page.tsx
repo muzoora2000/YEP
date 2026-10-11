@@ -45,7 +45,7 @@ function ProjectsContent() {
       />
 
       <form
-        className="mb-6 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-3"
+        className="mb-6 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-3 dark:border-slate-800 dark:bg-slate-900"
         onSubmit={(event) => event.preventDefault()}
         aria-label="Filter projects"
       >
@@ -84,7 +84,7 @@ function ProjectsContent() {
             <Card key={project.id} as="article">
               <div className="flex items-start justify-between gap-3">
                 <CardTitle>
-                  <Link href={`/projects/${project.id}`} className="hover:text-brand-700 hover:underline">
+                  <Link href={`/projects/${project.id}`} className="hover:text-brand-700 dark:hover:text-brand-300 hover:underline">
                     {project.title}
                   </Link>
                 </CardTitle>
@@ -94,8 +94,8 @@ function ProjectsContent() {
                 {project.teamName ? `Team ${project.teamName}` : 'Unassigned team'}
                 {project.focusArea ? ` · ${titleCase(project.focusArea)}` : ''}
               </CardDescription>
-              <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
-                {project.submissionDate && <span className="rounded-full bg-slate-100 px-2.5 py-1">Submitted</span>}
+              <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600 dark:text-slate-300">
+                {project.submissionDate && <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1">Submitted</span>}
                 {project.aiAssisted && <Badge tone="DRAFT">AI-assisted draft</Badge>}
               </div>
               <div className="mt-4">

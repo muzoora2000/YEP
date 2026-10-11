@@ -20,7 +20,7 @@ export default function CertificateLookupPage() {
       />
 
       <form
-        className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+        className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
         onSubmit={(event) => {
           event.preventDefault();
           const trimmed = code.trim();

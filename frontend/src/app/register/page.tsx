@@ -74,8 +74,8 @@ export default function RegisterPage() {
   return (
     <div className="mx-auto max-w-2xl">
       <div className="mb-6 text-center">
-        <h1 className="text-2xl font-bold text-slate-900">Create your YEP account</h1>
-        <p className="mt-1 text-sm text-slate-600">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Create your YEP account</h1>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
           Only the details needed to run the programme are collected, and only with your consent.
         </p>
       </div>
@@ -83,7 +83,7 @@ export default function RegisterPage() {
       <form
         onSubmit={handleSubmit(onSubmit)}
         noValidate
-        className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+        className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
       >
         {serverError && <Alert>{serverError}</Alert>}
 
@@ -141,7 +141,7 @@ export default function RegisterPage() {
         </div>
 
         {role === 'PARTICIPANT' && (
-          <div className="grid gap-4 rounded-xl bg-slate-50 p-4 sm:grid-cols-2">
+          <div className="grid gap-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 p-4 sm:grid-cols-2">
             <Field label="Age" htmlFor="age" error={errors.age?.message} required hint="Participants must be 16-40">
               <Input
                 id="age"
@@ -164,7 +164,7 @@ export default function RegisterPage() {
         )}
 
         {role === 'FACILITATOR' && (
-          <div className="grid gap-4 rounded-xl bg-slate-50 p-4 sm:grid-cols-2">
+          <div className="grid gap-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 p-4 sm:grid-cols-2">
             <Field label="Area of expertise" htmlFor="expertiseArea" error={errors.expertiseArea?.message}>
               <Input id="expertiseArea" placeholder="Digital literacy" invalid={!!errors.expertiseArea} {...register('expertiseArea')} />
             </Field>
@@ -180,7 +180,7 @@ export default function RegisterPage() {
         )}
 
         {role === 'MENTOR' && (
-          <div className="rounded-xl bg-slate-50 p-4">
+          <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 p-4">
             <Field
               label="Mentorship areas"
               htmlFor="mentorshipAreas"
@@ -207,9 +207,9 @@ export default function RegisterPage() {
           Create account
         </Button>
 
-        <p className="text-center text-sm text-slate-600">
+        <p className="text-center text-sm text-slate-600 dark:text-slate-300">
           Already registered?{' '}
-          <Link href="/login" className="font-semibold text-brand-700 hover:underline">
+          <Link href="/login" className="font-semibold text-brand-700 dark:text-brand-300 hover:underline">
             Sign in
           </Link>
         </p>

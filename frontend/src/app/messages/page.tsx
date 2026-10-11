@@ -34,17 +34,17 @@ function MessageRow({ message, onRead }: { message: Message; onRead: (id: number
         onClick={() => !message.read && onRead(message.id)}
         className={`w-full rounded-xl border px-4 py-3 text-left transition ${
           message.read
-            ? 'border-slate-200 bg-white'
-            : 'border-brand-200 bg-brand-50/60 hover:bg-brand-50'
+            ? 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900'
+            : 'border-brand-200 bg-brand-50/60 hover:bg-brand-50 dark:border-brand-500/30 dark:bg-brand-500/15 dark:hover:bg-brand-500/20'
         }`}
       >
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-slate-900">
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
               {message.subject || (message.messageType === 'ANNOUNCEMENT' ? 'Announcement' : 'Message')}
-              {!message.read && <span className="ml-2 text-xs font-bold text-brand-700">NEW</span>}
+              {!message.read && <span className="ml-2 text-xs font-bold text-brand-700 dark:text-brand-300">NEW</span>}
             </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               {message.messageType === 'ANNOUNCEMENT'
                 ? `From ${message.senderName ?? 'YEP'} · scope ${message.scope ?? 'ALL_USERS'}`
                 : `From ${message.senderName ?? 'Participant'}`}
@@ -63,7 +63,7 @@ function MessageRow({ message, onRead }: { message: Message; onRead: (id: number
             )}
           </div>
         </div>
-        <p className="mt-2 whitespace-pre-line text-sm text-slate-700">{message.body}</p>
+        <p className="mt-2 whitespace-pre-line text-sm text-slate-700 dark:text-slate-200">{message.body}</p>
       </button>
     </li>
   );
@@ -402,17 +402,17 @@ function MessagesContent() {
       <div className="grid gap-6 lg:grid-cols-3">
         <section className="space-y-4 lg:col-span-2">
           {isStaff && tab === 'announcements' && (pending.data ?? []).length > 0 && (
-            <Card className="border-amber-200 bg-amber-50/60">
-              <CardTitle className="text-amber-900">Awaiting human approval</CardTitle>
-              <CardDescription className="text-amber-900">
+            <Card className="border-amber-200 bg-amber-50/60 dark:border-amber-500/30 dark:bg-amber-500/10">
+              <CardTitle className="text-amber-900 dark:text-amber-200">Awaiting human approval</CardTitle>
+              <CardDescription className="text-amber-900 dark:text-amber-200">
                 AI-drafted announcements must be approved by a person before anyone sees them.
               </CardDescription>
               <ul className="mt-3 space-y-2">
                 {(pending.data ?? []).map((message) => (
-                  <li key={message.id} className="flex items-start justify-between gap-3 rounded-lg bg-white px-3 py-2">
+                  <li key={message.id} className="flex items-start justify-between gap-3 rounded-lg bg-white dark:bg-slate-900 px-3 py-2">
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">{message.subject}</p>
-                      <p className="text-xs text-slate-600">{message.body}</p>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{message.subject}</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-300">{message.body}</p>
                     </div>
                     <Button
                       size="sm"

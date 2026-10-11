@@ -47,25 +47,25 @@ export default function TeamsPage() {
           {(teams.data ?? []).map((team) => (
             <Card key={team.id} as="article">
               <CardTitle>
-                <Link href={`/teams/${team.id}`} className="hover:text-brand-700 hover:underline">
+                <Link href={`/teams/${team.id}`} className="hover:text-brand-700 dark:hover:text-brand-300 hover:underline">
                   {team.name}
                 </Link>
               </CardTitle>
               <CardDescription>
                 {team.description || team.exchangeTitle || 'Level Two team'}
               </CardDescription>
-              <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
-                <span className="rounded-full bg-slate-100 px-2.5 py-1">
+              <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600 dark:text-slate-300">
+                <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1">
                   {team.memberCount} member{team.memberCount === 1 ? '' : 's'}
                 </span>
-                <span className="rounded-full bg-slate-100 px-2.5 py-1">Since {formatDate(team.createdAt)}</span>
+                <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1">Since {formatDate(team.createdAt)}</span>
                 {team.mentorName && <Badge tone="MENTOR">Mentor {team.mentorName}</Badge>}
               </div>
               <div className="mt-4 flex items-center justify-between gap-2">
                 <Badge tone={team.impactProjectStatus ?? 'DRAFT'}>
                   {team.impactProjectStatus ? titleCase(team.impactProjectStatus) : 'No project yet'}
                 </Badge>
-                <Link href={`/teams/${team.id}`} className="text-xs font-semibold text-brand-700 hover:underline">
+                <Link href={`/teams/${team.id}`} className="text-xs font-semibold text-brand-700 dark:text-brand-300 hover:underline">
                   Open →
                 </Link>
               </div>

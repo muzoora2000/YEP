@@ -47,7 +47,7 @@ function UsersPanel() {
   return (
     <>
       <form
-        className="mb-4 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-3"
+        className="mb-4 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-3 dark:border-slate-800 dark:bg-slate-900"
         onSubmit={(event) => {
           event.preventDefault();
           setQ(search.trim());
@@ -91,9 +91,9 @@ function UsersPanel() {
       ) : (users.data?.content ?? []).length === 0 ? (
         <EmptyState title="No users found" description="Try a different role or search term." />
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+        <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
           <table className="w-full min-w-[720px] text-left text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-400">
               <tr>
                 <th scope="col" className="px-4 py-3">Name</th>
                 <th scope="col" className="px-4 py-3">Email</th>
@@ -103,13 +103,13 @@ function UsersPanel() {
                 <th scope="col" className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
               {(users.data?.content ?? []).map((user) => (
                 <tr key={user.id}>
-                  <td className="px-4 py-3 font-medium text-slate-900">{user.fullName}</td>
-                  <td className="px-4 py-3 text-slate-600">{user.email}</td>
+                  <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{user.fullName}</td>
+                  <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{user.email}</td>
                   <td className="px-4 py-3"><Badge tone={user.role}>{titleCase(user.role)}</Badge></td>
-                  <td className="px-4 py-3 text-slate-600">{formatDate(user.createdAt)}</td>
+                  <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{formatDate(user.createdAt)}</td>
                   <td className="px-4 py-3">
                     <Badge tone={user.accountStatus === 'ACTIVE' ? 'COMPLETED' : 'REJECTED'}>
                       {titleCase(user.accountStatus)}
@@ -152,7 +152,7 @@ function ProjectsPanel() {
   return (
     <>
       <form
-        className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 sm:max-w-xs"
+        className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 sm:max-w-xs dark:border-slate-800 dark:bg-slate-900"
         onSubmit={(event) => event.preventDefault()}
       >
         <Field label="Pipeline stage" htmlFor="pipeline">
@@ -180,10 +180,10 @@ function ProjectsPanel() {
               <Card className="!p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <Link href={`/projects/${project.id}`} className="font-semibold text-slate-900 hover:text-brand-700 hover:underline">
+                    <Link href={`/projects/${project.id}`} className="font-semibold text-slate-900 dark:text-slate-100 hover:text-brand-700 dark:hover:text-brand-300 hover:underline">
                       {project.title}
                     </Link>
-                    <p className="mt-0.5 text-xs text-slate-500">
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                       Team {project.teamName ?? '—'}
                       {project.focusArea ? ` · ${titleCase(project.focusArea)}` : ''}
                       {project.submissionDate ? ` · submitted ${formatDate(project.submissionDate)}` : ''}
@@ -341,14 +341,14 @@ function ExchangesPanel() {
         ) : exchanges.isError ? (
           <ErrorState message="Could not load exchanges." onRetry={() => exchanges.refetch()} />
         ) : (
-          <ul className="mt-3 divide-y divide-slate-100">
+          <ul className="mt-3 divide-y divide-slate-100 dark:divide-slate-700">
             {(exchanges.data?.content ?? []).map((exchange) => (
               <li key={exchange.id} className="flex items-center justify-between gap-3 py-2.5">
                 <div>
-                  <Link href={`/exchanges/${exchange.id}`} className="text-sm font-medium text-slate-900 hover:text-brand-700 hover:underline">
+                  <Link href={`/exchanges/${exchange.id}`} className="text-sm font-medium text-slate-900 dark:text-slate-100 hover:text-brand-700 dark:hover:text-brand-300 hover:underline">
                     {exchange.title}
                   </Link>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     {exchange.level === 'LEVEL_ONE' ? 'Level One' : 'Level Two'} · starts {formatDate(exchange.startDate)}
                   </p>
                 </div>

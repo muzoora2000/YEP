@@ -40,11 +40,11 @@ function ExchangeCard({ exchange }: { exchange: Exchange }) {
     <Card as="article" className="flex flex-col">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">
+          <p className="text-xs font-semibold uppercase tracking-wide text-brand-700 dark:text-brand-300">
             {exchange.level === 'LEVEL_ONE' ? 'Level One session' : 'Level Two programme'}
           </p>
           <CardTitle className="mt-1">
-            <Link href={`/exchanges/${exchange.id}`} className="hover:text-brand-700 hover:underline">
+            <Link href={`/exchanges/${exchange.id}`} className="hover:text-brand-700 dark:hover:text-brand-300 hover:underline">
               {exchange.title}
             </Link>
           </CardTitle>
@@ -60,18 +60,18 @@ function ExchangeCard({ exchange }: { exchange: Exchange }) {
           : exchange.summaryLabel}
       </CardDescription>
 
-      <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
+      <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600 dark:text-slate-300">
         <Badge tone={exchange.level}>
           {exchange.topic ? titleCase(exchange.topic) : exchange.focusArea ? titleCase(exchange.focusArea) : 'Exchange'}
         </Badge>
-        <span className="rounded-full bg-slate-100 px-2.5 py-1">Starts {formatDate(exchange.startDate)}</span>
-        <span className="rounded-full bg-slate-100 px-2.5 py-1">
+        <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1">Starts {formatDate(exchange.startDate)}</span>
+        <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1">
           {exchange.enrolledCount} enrolled{exchange.teamCount > 0 ? ` · ${exchange.teamCount} teams` : ''}
         </span>
       </div>
 
       {error && (
-        <p role="alert" className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700">
+        <p role="alert" className="mt-3 rounded-lg bg-rose-50 dark:bg-rose-500/10 px-3 py-2 text-xs text-rose-700 dark:text-rose-200">
           {error}
         </p>
       )}
@@ -124,7 +124,7 @@ function ExchangesContent() {
       />
 
       <form
-        className="mb-6 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-4"
+        className="mb-6 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-4 dark:border-slate-800 dark:bg-slate-900"
         onSubmit={(event) => event.preventDefault()}
         role="search"
         aria-label="Filter exchanges"
@@ -240,7 +240,7 @@ function ExchangesContent() {
             <Button variant="secondary" size="sm" disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}>
               Previous
             </Button>
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-slate-600 dark:text-slate-300">
               Page {(exchanges.data?.page ?? 0) + 1} of {Math.max(exchanges.data?.totalPages ?? 1, 1)} ·{' '}
               {exchanges.data?.totalElements ?? 0} results
             </p>

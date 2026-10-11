@@ -132,24 +132,24 @@ export default function ExchangeDetailPage() {
         <section className="lg:col-span-2 space-y-4">
           <Card>
             <CardTitle>About this {isLevelTwo ? 'programme' : 'session'}</CardTitle>
-            <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-700">
+            <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-700 dark:text-slate-200">
               {exchange.description ?? 'Details will be published by the facilitator soon.'}
             </p>
-            <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-600">
+            <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-600 dark:text-slate-300">
               <Badge>{isLevelTwo ? 'Level Two' : 'Level One'}</Badge>
               {exchange.topic && <Badge tone="LEVEL_ONE">{titleCase(exchange.topic)}</Badge>}
               {exchange.focusArea && <Badge tone="LEVEL_TWO">{titleCase(exchange.focusArea)}</Badge>}
-              <span className="rounded-full bg-slate-100 px-2.5 py-1">Starts {formatDate(exchange.startDate)}</span>
+              <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1">Starts {formatDate(exchange.startDate)}</span>
               {exchange.endDate && (
-                <span className="rounded-full bg-slate-100 px-2.5 py-1">Ends {formatDate(exchange.endDate)}</span>
+                <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1">Ends {formatDate(exchange.endDate)}</span>
               )}
-              <span className="rounded-full bg-slate-100 px-2.5 py-1">{exchange.enrolledCount} enrolled</span>
+              <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1">{exchange.enrolledCount} enrolled</span>
               {exchange.maxParticipants && (
-                <span className="rounded-full bg-slate-100 px-2.5 py-1">Cap {exchange.maxParticipants}</span>
+                <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1">Cap {exchange.maxParticipants}</span>
               )}
             </div>
             {exchange.sessionLink && (
-              <div className="mt-4 rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-900">
+              <div className="mt-4 rounded-lg bg-brand-50 dark:bg-brand-500/15 px-3 py-2 text-sm text-brand-900 dark:text-brand-200">
                 Session link:{' '}
                 <a href={exchange.sessionLink} target="_blank" rel="noreferrer noopener" className="font-semibold underline">
                   {exchange.sessionLink}
@@ -168,14 +168,14 @@ export default function ExchangeDetailPage() {
               </CardDescription>
 
               {(teamsQuery.data ?? []).length > 0 && (
-                <ul className="mt-3 divide-y divide-slate-100">
+                <ul className="mt-3 divide-y divide-slate-100 dark:divide-slate-700">
                   {(teamsQuery.data ?? []).map((team) => (
                     <li key={team.id} className="flex items-center justify-between gap-3 py-2.5">
                       <div>
-                        <a href={`/teams/${team.id}`} className="font-medium text-slate-900 hover:text-brand-700 hover:underline">
+                        <a href={`/teams/${team.id}`} className="font-medium text-slate-900 dark:text-slate-100 hover:text-brand-700 dark:hover:text-brand-300 hover:underline">
                           {team.name}
                         </a>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
                           {team.memberCount} members{team.mentorName ? ` · mentor ${team.mentorName}` : ''}
                         </p>
                       </div>
@@ -189,11 +189,11 @@ export default function ExchangeDetailPage() {
 
               {user?.role === 'PARTICIPANT' && (
                 <form
-                  className="mt-4 space-y-3 border-t border-slate-100 pt-4"
+                  className="mt-4 space-y-3 border-t border-slate-100 dark:border-slate-800 pt-4"
                   onSubmit={handleSubmit((values) => createTeam.mutate(values))}
                   noValidate
                 >
-                  <h3 className="text-sm font-semibold text-slate-900">Create a team</h3>
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Create a team</h3>
                   <Field label="Team name" htmlFor="team-name" error={errors.name?.message} required>
                     <Input id="team-name" invalid={!!errors.name} {...register('name')} />
                   </Field>
@@ -215,30 +215,30 @@ export default function ExchangeDetailPage() {
             <CardTitle>At a glance</CardTitle>
             <dl className="mt-3 space-y-2 text-sm">
               <div className="flex justify-between gap-3">
-                <dt className="text-slate-500">Level</dt>
-                <dd className="font-medium text-slate-800">{isLevelTwo ? 'Level Two' : 'Level One'}</dd>
+                <dt className="text-slate-500 dark:text-slate-400">Level</dt>
+                <dd className="font-medium text-slate-800 dark:text-slate-200">{isLevelTwo ? 'Level Two' : 'Level One'}</dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-slate-500">Status</dt>
-                <dd className="font-medium text-slate-800">{titleCase(exchange.status)}</dd>
+                <dt className="text-slate-500 dark:text-slate-400">Status</dt>
+                <dd className="font-medium text-slate-800 dark:text-slate-200">{titleCase(exchange.status)}</dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-slate-500">Starts</dt>
-                <dd className="font-medium text-slate-800">{formatDate(exchange.startDate)}</dd>
+                <dt className="text-slate-500 dark:text-slate-400">Starts</dt>
+                <dd className="font-medium text-slate-800 dark:text-slate-200">{formatDate(exchange.startDate)}</dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-slate-500">Participants</dt>
-                <dd className="font-medium text-slate-800">{exchange.enrolledCount}</dd>
+                <dt className="text-slate-500 dark:text-slate-400">Participants</dt>
+                <dd className="font-medium text-slate-800 dark:text-slate-200">{exchange.enrolledCount}</dd>
               </div>
               {isLevelTwo && (
                 <div className="flex justify-between gap-3">
-                  <dt className="text-slate-500">Teams</dt>
-                  <dd className="font-medium text-slate-800">{exchange.teamCount}</dd>
+                  <dt className="text-slate-500 dark:text-slate-400">Teams</dt>
+                  <dd className="font-medium text-slate-800 dark:text-slate-200">{exchange.teamCount}</dd>
                 </div>
               )}
             </dl>
             {!isLevelTwo && user?.role === 'PARTICIPANT' && !exchange.canEnroll && (
-              <p className="mt-3 text-xs text-slate-500">
+              <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
                 Enrolment is closed for this session - ask the facilitator for the next cohort.
               </p>
             )}
@@ -270,7 +270,7 @@ export default function ExchangeDetailPage() {
               <ul className="mt-3 max-h-72 space-y-2 overflow-y-auto text-sm">
                 {enrollmentsQuery.data.map((enrollment) => (
                   <li key={enrollment.id} className="flex items-center justify-between gap-2">
-                    <span className="text-slate-700">{enrollment.participantName ?? 'Participant'}</span>
+                    <span className="text-slate-700 dark:text-slate-200">{enrollment.participantName ?? 'Participant'}</span>
                     <Badge tone={enrollment.completionStatus}>{titleCase(enrollment.completionStatus)}</Badge>
                   </li>
                 ))}

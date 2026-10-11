@@ -22,8 +22,8 @@ function AssessmentCard({ assessment }: { assessment: Assessment }) {
     <Card as="article" className="!p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-slate-900">{assessment.criteria}</p>
-          <p className="mt-0.5 text-xs text-slate-500">
+          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{assessment.criteria}</p>
+          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
             {assessment.targetLabel ? `${titleCase(assessment.targetType)}: ${assessment.targetLabel}` : titleCase(assessment.targetType)}
             {assessment.assessorName ? ` · by ${assessment.assessorName}` : ''} · {formatDate(assessment.assessmentDate)}
           </p>
@@ -32,11 +32,11 @@ function AssessmentCard({ assessment }: { assessment: Assessment }) {
           <Badge tone={assessment.pass ? 'COMPLETED' : 'REJECTED'}>
             {assessment.pass ? 'Pass' : 'Needs work'}
           </Badge>
-          <p className="mt-1 text-lg font-bold text-slate-900">{assessment.score}</p>
+          <p className="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">{assessment.score}</p>
         </div>
       </div>
       {assessment.feedback && (
-        <p className="mt-3 whitespace-pre-line text-sm text-slate-700">{assessment.feedback}</p>
+        <p className="mt-3 whitespace-pre-line text-sm text-slate-700 dark:text-slate-200">{assessment.feedback}</p>
       )}
     </Card>
   );
@@ -167,7 +167,7 @@ function AssessmentsContent() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <section className="space-y-4 lg:col-span-2">
-          <h2 className="text-base font-semibold text-slate-900">
+          <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
             {isStaff ? 'Assessments you have given' : 'My feedback'}
           </h2>
 
@@ -203,7 +203,7 @@ function AssessmentsContent() {
             <CardTitle>My certificates</CardTitle>
             <CardDescription>Verifiable with the code on the certificate.</CardDescription>
             {(certificates.data ?? []).length === 0 ? (
-              <p className="mt-3 text-sm text-slate-600">
+              <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
                 No certificates yet - complete a Level One activity or an approved impact project.
               </p>
             ) : (
@@ -211,8 +211,8 @@ function AssessmentsContent() {
                 {(certificates.data ?? []).map((certificate) => (
                   <li key={certificate.id} className="flex items-center justify-between gap-2">
                     <div>
-                      <p className="text-sm font-medium text-slate-900">{certificate.title}</p>
-                      <p className="text-xs text-slate-500">{formatDate(certificate.issueDate)}</p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{certificate.title}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{formatDate(certificate.issueDate)}</p>
                     </div>
                     <LinkButton href={`/certificates/${certificate.verificationCode}`} size="sm" variant="secondary">
                       Verify

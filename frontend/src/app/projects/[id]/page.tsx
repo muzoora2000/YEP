@@ -116,22 +116,22 @@ export default function ProjectDetailPage() {
         <section className="space-y-4 lg:col-span-2">
           <Card>
             <CardTitle>Problem statement</CardTitle>
-            <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-700">
+            <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-700 dark:text-slate-200">
               {project.problemStatement || 'Not documented yet.'}
             </p>
           </Card>
 
           <Card>
             <CardTitle>Proposed solution</CardTitle>
-            <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-700">
+            <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-700 dark:text-slate-200">
               {project.proposedSolution || 'Not documented yet.'}
             </p>
           </Card>
 
           {project.aiAssisted && (
-            <Card className="border-amber-200 bg-amber-50/50">
-              <CardTitle className="text-amber-900">Responsible AI disclosure</CardTitle>
-              <CardDescription className="text-amber-900">
+            <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-500/30 dark:bg-amber-500/10">
+              <CardTitle className="text-amber-900 dark:text-amber-200">Responsible AI disclosure</CardTitle>
+              <CardDescription className="text-amber-900 dark:text-amber-200">
                 This project declares AI assistance: {project.aiUsageNote || 'no usage note provided'}.
                 The content was still drafted and approved by the team.
               </CardDescription>
@@ -141,9 +141,9 @@ export default function ProjectDetailPage() {
           {project.reviewFeedback && (
             <Card>
               <CardTitle>Reviewer feedback</CardTitle>
-              <p className="mt-3 whitespace-pre-line text-sm text-slate-700">{project.reviewFeedback}</p>
+              <p className="mt-3 whitespace-pre-line text-sm text-slate-700 dark:text-slate-200">{project.reviewFeedback}</p>
               {project.reviewedAt && (
-                <p className="mt-2 text-xs text-slate-500">Reviewed {formatDate(project.reviewedAt)}</p>
+                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Reviewed {formatDate(project.reviewedAt)}</p>
               )}
             </Card>
           )}
@@ -154,20 +154,20 @@ export default function ProjectDetailPage() {
             <CardTitle>At a glance</CardTitle>
             <dl className="mt-3 space-y-2 text-sm">
               <div className="flex justify-between gap-3">
-                <dt className="text-slate-500">Status</dt>
-                <dd className="font-medium text-slate-800">{titleCase(project.status)}</dd>
+                <dt className="text-slate-500 dark:text-slate-400">Status</dt>
+                <dd className="font-medium text-slate-800 dark:text-slate-200">{titleCase(project.status)}</dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-slate-500">Submitted</dt>
-                <dd className="font-medium text-slate-800">
+                <dt className="text-slate-500 dark:text-slate-400">Submitted</dt>
+                <dd className="font-medium text-slate-800 dark:text-slate-200">
                   {project.submissionDate ? formatDate(project.submissionDate) : 'Not submitted'}
                 </dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-slate-500">Team</dt>
-                <dd className="text-right font-medium text-slate-800">
+                <dt className="text-slate-500 dark:text-slate-400">Team</dt>
+                <dd className="text-right font-medium text-slate-800 dark:text-slate-200">
                   {project.teamId ? (
-                    <Link className="text-brand-700 hover:underline" href={`/teams/${project.teamId}`}>
+                    <Link className="text-brand-700 dark:text-brand-300 hover:underline" href={`/teams/${project.teamId}`}>
                       {project.teamName}
                     </Link>
                   ) : (
@@ -176,8 +176,8 @@ export default function ProjectDetailPage() {
                 </dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-slate-500">AI assisted</dt>
-                <dd className="font-medium text-slate-800">{project.aiAssisted ? 'Yes' : 'No'}</dd>
+                <dt className="text-slate-500 dark:text-slate-400">AI assisted</dt>
+                <dd className="font-medium text-slate-800 dark:text-slate-200">{project.aiAssisted ? 'Yes' : 'No'}</dd>
               </div>
             </dl>
           </Card>
@@ -189,7 +189,7 @@ export default function ProjectDetailPage() {
                 AI can draft feedback below, but approving or rejecting always stays with a person.
               </CardDescription>
 
-              <label htmlFor="review-feedback" className="mt-3 block text-sm font-medium text-slate-700">
+              <label htmlFor="review-feedback" className="mt-3 block text-sm font-medium text-slate-700 dark:text-slate-200">
                 Feedback for the team
               </label>
               <Textarea
@@ -226,7 +226,7 @@ export default function ProjectDetailPage() {
                 <Button
                   size="sm"
                   variant="secondary"
-                  className="!text-rose-700 ring-rose-200"
+                  className="!text-rose-700 dark:!text-rose-200 ring-rose-200 dark:ring-rose-500/30"
                   loading={review.isPending}
                   disabled={!canReview}
                   onClick={() => review.mutate('REQUEST_CHANGES')}

@@ -65,17 +65,17 @@ export default function HomePage() {
           Level Two impact project, get mentored, and graduate with a certificate anyone can verify.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
-          <LinkButton href="/register" className="bg-white !text-brand-700 hover:bg-brand-50">
+          <LinkButton href="/register" className="bg-white dark:bg-slate-900 !text-brand-700 dark:!text-brand-300 hover:bg-brand-50 dark:hover:bg-brand-500/20">
             Join YEP
           </LinkButton>
-          <LinkButton href="/exchanges" variant="secondary" className="!text-brand-800 ring-white/60">
+          <LinkButton href="/exchanges" variant="secondary" className="!text-brand-800 dark:!text-brand-200 ring-white/60">
             Browse exchanges
           </LinkButton>
         </div>
       </section>
 
       <section aria-labelledby="what-you-can-do">
-        <h2 id="what-you-can-do" className="text-xl font-bold text-slate-900 sm:text-2xl">
+        <h2 id="what-you-can-do" className="text-xl font-bold text-slate-900 dark:text-slate-100 sm:text-2xl">
           What you can do on YEP
         </h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -90,13 +90,13 @@ export default function HomePage() {
 
       <section aria-labelledby="how-it-works" className="grid gap-8 lg:grid-cols-2">
         <div>
-          <h2 id="how-it-works" className="text-xl font-bold text-slate-900 sm:text-2xl">
+          <h2 id="how-it-works" className="text-xl font-bold text-slate-900 dark:text-slate-100 sm:text-2xl">
             How it works
           </h2>
           <ol className="mt-5 space-y-3">
             {steps.map((step, index) => (
-              <li key={step} className="flex items-start gap-3 text-sm text-slate-700">
-                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-100 text-xs font-bold text-brand-800">
+              <li key={step} className="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-200">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-100 text-xs font-bold text-brand-800 dark:bg-brand-500/20 dark:text-brand-200">
                   {index + 1}
                 </span>
                 <span className="pt-0.5">{step}</span>
@@ -111,14 +111,14 @@ export default function HomePage() {
             YEP is a progressive web app: it installs on a phone, keeps an offline shell, lazy-loads images
             and paginates every API response, so it stays usable on a metered connection.
           </CardDescription>
-          <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium text-slate-600">
-            <span className="rounded-full bg-slate-100 px-3 py-1">PWA offline shell</span>
-            <span className="rounded-full bg-slate-100 px-3 py-1">WCAG 2.1 AA patterns</span>
-            <span className="rounded-full bg-slate-100 px-3 py-1">BCrypt + JWT</span>
-            <span className="rounded-full bg-slate-100 px-3 py-1">Consent-first registration</span>
+          <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+            <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1">PWA offline shell</span>
+            <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1">WCAG 2.1 AA patterns</span>
+            <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1">BCrypt + JWT</span>
+            <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1">Consent-first registration</span>
           </div>
           <div className="mt-5">
-            <Link href="/certificates/verify" className="text-sm font-semibold text-brand-700 hover:underline">
+            <Link href="/certificates/verify" className="text-sm font-semibold text-brand-700 dark:text-brand-300 hover:underline">
               Verify an existing certificate →
             </Link>
           </div>

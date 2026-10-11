@@ -37,8 +37,8 @@ export default function LoginPage() {
   return (
     <div className="mx-auto max-w-md">
       <div className="mb-6 text-center">
-        <h1 className="text-2xl font-bold text-slate-900">Sign in to YEP</h1>
-        <p className="mt-1 text-sm text-slate-600">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Sign in to YEP</h1>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
           Access your exchanges, teams, projects and certificates.
         </p>
       </div>
@@ -46,7 +46,7 @@ export default function LoginPage() {
       <form
         onSubmit={handleSubmit(onSubmit)}
         noValidate
-        className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+        className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
       >
         {serverError && <Alert>{serverError}</Alert>}
 
@@ -75,9 +75,9 @@ export default function LoginPage() {
           Sign in
         </Button>
 
-        <p className="text-center text-sm text-slate-600">
+        <p className="text-center text-sm text-slate-600 dark:text-slate-300">
           New to YEP?{' '}
-          <Link href="/register" className="font-semibold text-brand-700 hover:underline">
+          <Link href="/register" className="font-semibold text-brand-700 dark:text-brand-300 hover:underline">
             Create an account
           </Link>
         </p>

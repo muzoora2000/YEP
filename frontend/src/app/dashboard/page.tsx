@@ -16,14 +16,14 @@ import { useQuery } from '@tanstack/react-query';
 function Stat({ label, value, href }: { label: string; value: string | number; href?: string }) {
   const body = (
     <>
-      <p className="text-2xl font-bold text-slate-900">{value}</p>
-      <p className="mt-1 text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{value}</p>
+      <p className="mt-1 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{label}</p>
     </>
   );
   return (
     <Card className="!p-4">
       {href ? (
-        <Link href={href} className="block hover:bg-slate-50 rounded-lg -m-2 p-2">
+        <Link href={href} className="block hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg -m-2 p-2">
           {body}
         </Link>
       ) : (
@@ -109,7 +109,7 @@ function DashboardContent() {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <section aria-labelledby="my-exchanges">
-          <h2 id="my-exchanges" className="mb-3 text-base font-semibold text-slate-900">
+          <h2 id="my-exchanges" className="mb-3 text-base font-semibold text-slate-900 dark:text-slate-100">
             My exchanges
           </h2>
           {activeEnrolments.length === 0 ? (
@@ -127,11 +127,11 @@ function DashboardContent() {
                       <div>
                         <Link
                           href={`/exchanges/${enrollment.exchangeId}`}
-                          className="font-semibold text-slate-900 hover:text-brand-700 hover:underline"
+                          className="font-semibold text-slate-900 dark:text-slate-100 hover:text-brand-700 dark:hover:text-brand-300 hover:underline"
                         >
                           {enrollment.exchangeTitle}
                         </Link>
-                        <p className="mt-0.5 text-xs text-slate-500">
+                        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                           {titleCase(enrollment.level)} · enrolled {formatDate(enrollment.enrolledAt)}
                         </p>
                       </div>
@@ -145,7 +145,7 @@ function DashboardContent() {
         </section>
 
         <section aria-labelledby="my-teams">
-          <h2 id="my-teams" className="mb-3 text-base font-semibold text-slate-900">My teams</h2>
+          <h2 id="my-teams" className="mb-3 text-base font-semibold text-slate-900 dark:text-slate-100">My teams</h2>
           {(teams.data ?? []).length === 0 ? (
             <EmptyState
               title="You are not on a team yet"
@@ -159,10 +159,10 @@ function DashboardContent() {
                   <Card className="!p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <Link href={`/teams/${team.id}`} className="font-semibold text-slate-900 hover:text-brand-700 hover:underline">
+                        <Link href={`/teams/${team.id}`} className="font-semibold text-slate-900 dark:text-slate-100 hover:text-brand-700 dark:hover:text-brand-300 hover:underline">
                           {team.name}
                         </Link>
-                        <p className="mt-0.5 text-xs text-slate-500">
+                        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                           {team.exchangeTitle ?? 'Level Two'} · {team.memberCount} member
                           {team.memberCount === 1 ? '' : 's'}
                           {team.mentorName ? ` · mentor ${team.mentorName}` : ''}
@@ -181,7 +181,7 @@ function DashboardContent() {
       </div>
 
       <section aria-labelledby="certificates" className="mt-6">
-        <h2 id="certificates" className="mb-3 text-base font-semibold text-slate-900">My certificates</h2>
+        <h2 id="certificates" className="mb-3 text-base font-semibold text-slate-900 dark:text-slate-100">My certificates</h2>
         {(certificates.data ?? []).length === 0 ? (
           <EmptyState
             title="No certificates yet"
@@ -193,14 +193,14 @@ function DashboardContent() {
               <Card key={certificate.id} className="!p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="font-semibold text-slate-900">{certificate.title}</p>
-                    <p className="mt-0.5 text-xs text-slate-500">
+                    <p className="font-semibold text-slate-900 dark:text-slate-100">{certificate.title}</p>
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                       {certificate.relatedActivityOrProject ?? 'YEP'} · {formatDate(certificate.issueDate)}
                     </p>
                   </div>
                   <Link
                     href={`/certificates/${certificate.verificationCode}`}
-                    className="shrink-0 text-xs font-semibold text-brand-700 hover:underline"
+                    className="shrink-0 text-xs font-semibold text-brand-700 dark:text-brand-300 hover:underline"
                   >
                     Verify
                   </Link>
@@ -231,7 +231,7 @@ function DashboardContent() {
         </section>
       )}
 
-      <p className="mt-8 text-xs text-slate-500">
+      <p className="mt-8 text-xs text-slate-500 dark:text-slate-400">
         Quick links:{' '}
         <Link className="underline" href={withQuery('/exchanges', { level: 'LEVEL_ONE' })}>
           Level One sessions

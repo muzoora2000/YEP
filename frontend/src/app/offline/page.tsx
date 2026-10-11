@@ -8,8 +8,8 @@ export const metadata = {
 export default function OfflinePage() {
   return (
     <div className="mx-auto max-w-prose py-16 text-center">
-      <h1 className="text-2xl font-bold text-slate-900">You are offline</h1>
-      <p className="mt-3 text-sm text-slate-600">
+      <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">You are offline</h1>
+      <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
         YEP could not reach the network. Your coursework, projects and messages will be here as soon as
         you reconnect.
       </p>

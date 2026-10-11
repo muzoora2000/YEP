@@ -165,12 +165,12 @@ export default function TeamDetailPage() {
         <section className="space-y-4 lg:col-span-2">
           <Card>
             <CardTitle>Members ({team.memberCount})</CardTitle>
-            <ul className="mt-3 divide-y divide-slate-100">
+            <ul className="mt-3 divide-y divide-slate-100 dark:divide-slate-700">
               {(team.members ?? []).map((member) => (
                 <li key={`${member.participantId}-${member.memberRole}`} className="flex items-center justify-between gap-3 py-2.5">
                   <div>
-                    <p className="text-sm font-medium text-slate-900">{member.fullName ?? 'Participant'}</p>
-                    <p className="text-xs text-slate-500">Joined {formatDate(member.joinedAt)}</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{member.fullName ?? 'Participant'}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Joined {formatDate(member.joinedAt)}</p>
                   </div>
                   <Badge tone={member.memberRole === 'LEAD' ? 'LEVEL_TWO' : 'DRAFT'}>
                     {titleCase(member.memberRole)}
@@ -195,26 +195,26 @@ export default function TeamDetailPage() {
               <SpinnerRow label="Loading project…" />
             ) : !project ? (
               canEditProject ? (
-                <p className="mt-3 text-sm text-slate-600">
+                <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
                   No project yet. Fill in the first draft below - save it as often as you like before submitting.
                 </p>
               ) : (
-                <p className="mt-3 text-sm text-slate-600">This team has not started a project yet.</p>
+                <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">This team has not started a project yet.</p>
               )
             ) : (
               <div className="mt-3 space-y-3">
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-900">{project.title}</h3>
-                  <p className="mt-1 whitespace-pre-line text-sm text-slate-700">
-                    <strong className="text-slate-900">Problem: </strong>
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{project.title}</h3>
+                  <p className="mt-1 whitespace-pre-line text-sm text-slate-700 dark:text-slate-200">
+                    <strong className="text-slate-900 dark:text-slate-100">Problem: </strong>
                     {project.problemStatement || 'Not documented yet.'}
                   </p>
-                  <p className="mt-2 whitespace-pre-line text-sm text-slate-700">
-                    <strong className="text-slate-900">Proposed solution: </strong>
+                  <p className="mt-2 whitespace-pre-line text-sm text-slate-700 dark:text-slate-200">
+                    <strong className="text-slate-900 dark:text-slate-100">Proposed solution: </strong>
                     {project.proposedSolution || 'Not documented yet.'}
                   </p>
                   {project.aiAssisted && (
-                    <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                    <p className="mt-2 rounded-lg bg-amber-50 dark:bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
                       AI was used in drafting this project: {project.aiUsageNote || 'no note given'}.
                       A human reviewer still checked it.
                     </p>
@@ -241,7 +241,7 @@ export default function TeamDetailPage() {
                   )}
                 </div>
                 {project.reviewFeedback && (
-                  <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                  <p className="rounded-lg bg-slate-50 dark:bg-slate-800/60 px-3 py-2 text-sm text-slate-700 dark:text-slate-200">
                     <strong>Reviewer feedback: </strong>
                     {project.reviewFeedback}
                   </p>
@@ -251,7 +251,7 @@ export default function TeamDetailPage() {
 
             {(canEditProject && (!project || editing)) && (
               <form
-                className="mt-5 space-y-4 border-t border-slate-100 pt-4"
+                className="mt-5 space-y-4 border-t border-slate-100 dark:border-slate-800 pt-4"
                 onSubmit={handleSubmit((values) => saveProject.mutate(values))}
                 noValidate
               >
@@ -304,14 +304,14 @@ export default function TeamDetailPage() {
             <CardTitle>Team details</CardTitle>
             <dl className="mt-3 space-y-2 text-sm">
               <div className="flex justify-between gap-3">
-                <dt className="text-slate-500">Created</dt>
-                <dd className="font-medium text-slate-800">{formatDate(team.createdAt)}</dd>
+                <dt className="text-slate-500 dark:text-slate-400">Created</dt>
+                <dd className="font-medium text-slate-800 dark:text-slate-200">{formatDate(team.createdAt)}</dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-slate-500">Exchange</dt>
-                <dd className="text-right font-medium text-slate-800">
+                <dt className="text-slate-500 dark:text-slate-400">Exchange</dt>
+                <dd className="text-right font-medium text-slate-800 dark:text-slate-200">
                   {team.levelTwoExchangeId ? (
-                    <Link className="text-brand-700 hover:underline" href={`/exchanges/${team.levelTwoExchangeId}`}>
+                    <Link className="text-brand-700 dark:text-brand-300 hover:underline" href={`/exchanges/${team.levelTwoExchangeId}`}>
                       {team.exchangeTitle ?? 'Level Two programme'}
                     </Link>
                   ) : (
@@ -320,19 +320,19 @@ export default function TeamDetailPage() {
                 </dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-slate-500">Mentor</dt>
-                <dd className="font-medium text-slate-800">{team.mentorName ?? 'Not assigned yet'}</dd>
+                <dt className="text-slate-500 dark:text-slate-400">Mentor</dt>
+                <dd className="font-medium text-slate-800 dark:text-slate-200">{team.mentorName ?? 'Not assigned yet'}</dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-slate-500">Members</dt>
-                <dd className="font-medium text-slate-800">{team.memberCount}</dd>
+                <dt className="text-slate-500 dark:text-slate-400">Members</dt>
+                <dd className="font-medium text-slate-800 dark:text-slate-200">{team.memberCount}</dd>
               </div>
             </dl>
           </Card>
 
           <Card>
             <CardTitle>Next steps</CardTitle>
-            <ul className="mt-3 space-y-2 text-sm text-slate-700">
+            <ul className="mt-3 space-y-2 text-sm text-slate-700 dark:text-slate-200">
               <li>1. Agree on a problem worth solving.</li>
               <li>2. Draft and submit your impact project.</li>
               <li>3. Iterate on reviewer feedback.</li>
