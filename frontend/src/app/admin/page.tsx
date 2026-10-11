@@ -238,6 +238,8 @@ function ExchangesPanel() {
           ...values,
           startDate: values.startDate,
           endDate: values.endDate || null,
+          topic: values.topic || null,
+          focusArea: values.focusArea || null,
           sessionLink: values.sessionLink || null,
           description: values.description || null,
         },

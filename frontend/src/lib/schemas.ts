@@ -41,22 +41,58 @@ export const registerSchema = z
 
 export type RegisterValues = z.infer<typeof registerSchema>;
 
-export const exchangeSchema = z.object({
-  title: z.string().min(4, 'Title is too short').max(180),
-  description: z.string().max(4000).optional(),
-  level: z.enum(['LEVEL_ONE', 'LEVEL_TWO']),
-  startDate: z.string().min(1, 'Start date is required'),
-  endDate: z.string().optional(),
-  status: z.enum(['DRAFT', 'OPEN', 'ACTIVE', 'COMPLETED', 'CANCELLED']).optional(),
-  topic: z.enum(['DIGITAL_LITERACY', 'AI_LITERACY', 'CRITICAL_THINKING', 'MEDIA_LITERACY', 'INTERCULTURAL_COMM']).optional(),
-  maxParticipants: z.coerce.number().int().min(1).max(100000).optional(),
-  sessionLink: z.string().max(500).optional(),
-  focusArea: z
-    .enum(['EMPLOYMENT', 'EDUCATION', 'AGRICULTURE', 'HEALTH', 'CLIMATE', 'DIGITAL_INCLUSION'])
-    .optional(),
-  maxTeams: z.coerce.number().int().min(1).max(500).optional(),
-  applicationsOpen: z.boolean().optional(),
-});
+export const exchangeSchema = z
+  .object({
+    title: z.string().min(4, 'Title is too short').max(180),
+    description: z.string().max(4000).optional(),
+    level: z.enum(['LEVEL_ONE', 'LEVEL_TWO']),
+    startDate: z.string().min(1, 'Start date is required'),
+    endDate: z.string().optional(),
+    status: z.enum(['DRAFT', 'OPEN', 'ACTIVE', 'COMPLETED', 'CANCELLED']).optional(),
+    topic: z
+      .enum(['DIGITAL_LITERACY', 'AI_LITERACY', 'CRITICAL_THINKING', 'MEDIA_LITERACY', 'INTERCULTURAL_COMM'])
+      .optional()
+      .or(z.literal('')),
+    maxParticipants: optionalPositiveInt(100000),
+    sessionLink: z.string().max(500).optional(),
+    focusArea: z
+      .enum(['EMPLOYMENT', 'EDUCATION', 'AGRICULTURE', 'HEALTH', 'CLIMATE', 'DIGITAL_INCLUSION'])
+      .optional()
+      .or(z.literal('')),
+    maxTeams: optionalPositiveInt(500),
+    applicationsOpen: z.boolean().optional(),
+  })
+  .superRefine((values, ctx) => {
+    if (values.level === 'LEVEL_ONE' && !values.topic) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['topic'],
+        message: 'Choose a topic for this Level One exchange',
+      });
+    }
+    if (values.level === 'LEVEL_TWO' && !values.focusArea) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['focusArea'],
+        message: 'Choose a focus area for this Level Two exchange',
+      });
+    }
+    if (values.startDate && values.endDate && values.endDate < values.startDate) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['endDate'],
+        message: 'End date cannot be before the start date',
+      });
+    }
+  });
+
+/** Blank optional number fields are sent as `''` by number inputs; treat them as "not set". */
+function optionalPositiveInt(max: number) {
+  return z.preprocess(
+    (value) => (value === '' || value === null ? undefined : value),
+    z.coerce.number().int().min(1, 'Must be at least 1').max(max).optional(),
+  );
+}
 
 export type ExchangeValues = z.infer<typeof exchangeSchema>;
 
