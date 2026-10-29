@@ -104,8 +104,9 @@ Notes:
    | `NEXT_PUBLIC_API_URL` | `https://yep-backend.onrender.com` |
    | `NEXT_PUBLIC_APP_URL` | `https://your-app.vercel.app` |
 
-4. Deploy. Preview deployments get their own URL - add it to `ALLOWED_ORIGINS` on Render if you
-   want preview builds to log in.
+4. Deploy. Browser calls go to the same-origin Next.js proxy at `/api/*`, which forwards them
+   server-side to `NEXT_PUBLIC_API_URL` (or `API_PROXY_TARGET`). This avoids CORS entirely and
+   lets logins work even when the visitor's DNS cannot resolve the Render hostname.
 
 ### Post-deploy checklist
 
@@ -130,7 +131,8 @@ Notes:
 | `DB_POOL_SIZE` | Render | optional |
 | `PORT` | Render | injected |
 | `SPRING_PROFILES_ACTIVE` | Render | `prod` |
-| `NEXT_PUBLIC_API_URL` | Vercel | always |
+| `NEXT_PUBLIC_API_URL` | Vercel | always (proxy target) |
+| `API_PROXY_TARGET` | Vercel | optional (overrides proxy target) |
 | `NEXT_PUBLIC_APP_URL` | Vercel | optional |
 
 ---
@@ -163,7 +165,7 @@ for the generated emails when the `h2`/`dev` profile starts.
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| CORS error in the browser | `ALLOWED_ORIGINS` does not include the Vercel preview/deployment origin | add the exact origin, e.g. `https://my-app.vercel.app`; trailing slashes and whitespace are ignored |
+| CORS error in the browser | browser is calling the Render URL directly instead of `/api` | redeploy the frontend so it uses the same-origin proxy, or add the exact origin to `ALLOWED_ORIGINS` |
 | `Invalid cookie, expected Secure` | cookie marked `Secure` but served over plain HTTP | keep `prod` on HTTPS only; use `dev`/`h2` locally |
 | `Schema-validation: missing table` | profile is `prod` but Flyway did not run | check `spring.flyway.enabled=true` and the migration log lines |
 | `JWT signature does not match` after redeploy | `JWT_SECRET` changed / not set | set a stable 32+ char secret as a Render environment variable |
