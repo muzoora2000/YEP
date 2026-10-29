@@ -41,6 +41,6 @@ yep:
     secret: ${JWT_SECRET:dev-only-secret-change-me-to-a-long-random-string-32+}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
   cors:
-    allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000}
+    allowed-origins: "${ALLOWED_ORIGINS:http://localhost:3000,http://127.0.0.1:3000}"
   cookie:
     secure: false

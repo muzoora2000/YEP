@@ -1,6 +1,8 @@
 package com.yep.config;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Locale;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
@@ -62,7 +64,11 @@ public class YepProperties {
     }
 
     public static class Cors {
-        /** Comma separated list of allowed frontend origins (the Vercel deployment). */
+        /**
+         * Comma separated list of allowed frontend origins or origin patterns
+         * (for example {@code https://app.example.com} or
+         * {@code http://localhost:[*]}).
+         */
         private String allowedOrigins = "http://localhost:3000";
 
         public String getAllowedOrigins() {
@@ -73,11 +79,28 @@ public class YepProperties {
             this.allowedOrigins = allowedOrigins;
         }
 
+        /**
+         * Normalised origins. Copy/pasting a URL from the browser often leaves a
+         * trailing slash or surrounding whitespace; the browser never sends those
+         * in the {@code Origin} header, so an exact string comparison would reject
+         * every login and registration request.
+         */
         public String[] originArray() {
             if (allowedOrigins == null || allowedOrigins.isBlank()) {
                 return new String[0];
             }
-            return allowedOrigins.split(",");
+            return Arrays.stream(allowedOrigins.split(","))
+                    .map(Cors::normalizeOrigin)
+                    .filter(origin -> !origin.isEmpty())
+                    .toArray(String[]::new);
+        }
+
+        private static String normalizeOrigin(String origin) {
+            String normalized = origin.trim();
+            while (normalized.endsWith("/")) {
+                normalized = normalized.substring(0, normalized.length() - 1);
+            }
+            return normalized.toLowerCase(Locale.ROOT);
         }
     }
 

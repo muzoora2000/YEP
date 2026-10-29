@@ -1,6 +1,12 @@
 import type { ApiErrorBody } from './types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080';
+function normalizeApiUrl(value: string | undefined): string {
+  const trimmed = value?.trim();
+  if (!trimmed) return 'http://localhost:8080';
+  return trimmed.replace(/\/+$/, '') || 'http://localhost:8080';
+}
+
+const API_URL = normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL);
 
 /**
  * The JWT also travels as an httpOnly cookie (`yep_token`), so a plain
@@ -49,9 +55,11 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     headers.Authorization = `Bearer ${accessToken}`;
   }
 
+  const url = `${API_URL}${path.startsWith('/') ? path : `/${path}`}`;
+
   let response: Response;
   try {
-    response = await fetch(`${API_URL}${path}`, {
+    response = await fetch(url, {
       method,
       headers,
       credentials: 'include',
@@ -59,7 +67,11 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
       signal,
     });
   } catch {
-    throw new ApiError(0, 'NETWORK_ERROR', 'Could not reach the YEP API. Check your connection and try again.');
+    throw new ApiError(
+      0,
+      'NETWORK_ERROR',
+      `Could not reach the YEP API at ${API_URL}. Check your connection and try again.`,
+    );
   }
 
   if (response.status === 204) {

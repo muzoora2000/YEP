@@ -14,6 +14,8 @@ spring:
 
 yep:
   cors:
-    allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000}
+    # Any port on the loopback interface is accepted so `npm run dev -p 3001`
+    # or opening the app via 127.0.0.1 does not break registration/login.
+    allowed-origins: "${ALLOWED_ORIGINS:http://localhost:[*],http://127.0.0.1:[*]}"
   cookie:
     secure: false

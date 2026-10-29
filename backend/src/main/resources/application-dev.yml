@@ -1,6 +1,7 @@
 # Development profile (default).
 # Schema is created/updated from the JPA entity model (spring.jpa.hibernate.ddl-auto=update).
-# Point DATABASE_URL at a local Postgres, or keep the default H2 in PostgreSQL mode.
+# Point DATABASE_URL at a local Postgres, or use SPRING_PROFILES_ACTIVE=h2 for the
+# offline in-memory demo database (no Postgres required).
 spring:
   datasource:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/yep}
@@ -17,6 +18,8 @@ spring:
 
 yep:
   cors:
-    allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000}
+    # Any port on the loopback interface is accepted so `npm run dev -p 3001`
+    # or opening the app via 127.0.0.1 does not break registration/login.
+    allowed-origins: "${ALLOWED_ORIGINS:http://localhost:[*],http://127.0.0.1:[*]}"
   cookie:
     secure: false

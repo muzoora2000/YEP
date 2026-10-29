@@ -163,7 +163,7 @@ for the generated emails when the `h2`/`dev` profile starts.
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| CORS error in the browser | `ALLOWED_ORIGINS` does not include the Vercel origin (or a trailing `/`) | set the exact origin, e.g. `https://my-app.vercel.app` |
+| CORS error in the browser | `ALLOWED_ORIGINS` does not include the Vercel preview/deployment origin | add the exact origin, e.g. `https://my-app.vercel.app`; trailing slashes and whitespace are ignored |
 | `Invalid cookie, expected Secure` | cookie marked `Secure` but served over plain HTTP | keep `prod` on HTTPS only; use `dev`/`h2` locally |
 | `Schema-validation: missing table` | profile is `prod` but Flyway did not run | check `spring.flyway.enabled=true` and the migration log lines |
 | `JWT signature does not match` after redeploy | `JWT_SECRET` changed / not set | set a stable 32+ char secret as a Render environment variable |
