@@ -1,22 +1,21 @@
-# Multi-stage build: compiles the Spring Boot fat jar, then runs it on a slim JRE.
+# Stage 1: build the executable Spring Boot jar with Maven.
 FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /workspace
 
-# Warm the dependency cache first so source-only changes rebuild fast.
 COPY pom.xml .
-RUN mvn -q -B -DskipTests dependency:go-offline
+RUN mvn -B -DskipTests dependency:go-offline
 
 COPY src ./src
-RUN mvn -q -B -DskipTests package
+RUN mvn -B -DskipTests package
 
-FROM eclipse-temurin:17-jre-jammy
+# Stage 2: small runtime image, non-root user, Render injects PORT.
+FROM eclipse-temurin:17-jre
 WORKDIR /app
 
-RUN groupadd --system yep && useradd --system --gid yep yep
+RUN groupadd --system yep && useradd --system --gid yep --home-dir /app yep
+COPY --from=build /workspace/target/yep-backend-*.jar app.jar
+RUN chown yep:yep app.jar
 USER yep
 
-COPY --from=build /workspace/target/yep-backend-*.jar app.jar
-
-# Render injects PORT; the app reads it from the environment.
 EXPOSE 8080
-ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75.0", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75.0", "-XX:+UseSerialGC", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]

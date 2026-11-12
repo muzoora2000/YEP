@@ -1,5 +1,6 @@
 package com.yep.domain.user;
 
+import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -7,90 +8,115 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import com.yep.domain.base.BaseEntity;
 import com.yep.domain.enums.AccountStatus;
-import com.yep.domain.enums.NotificationChannel;
 import com.yep.domain.enums.Role;
-import com.yep.domain.interfaces.Notifiable;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.DiscriminatorColumn;
-import jakarta.persistence.DiscriminatorType;
-import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.Index;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 /**
- * Abstract base class of every account on YEP.
- *
- * <p>Uses {@link InheritanceType#SINGLE_TABLE}: all four roles share the
- * {@code users} table and the {@code role} column doubles as the JPA
- * discriminator, exactly as required by the database schema.</p>
- *
- * <p>Encapsulates authentication and notification concerns behind
- * {@link UserDetails} and {@link Notifiable} so the security layer and the
- * notification layer depend only on abstractions.</p>
+ * Abstract account root. JOINED inheritance keeps shared authentication data in
+ * users while each profile keeps only its own columns.
  */
 @Entity
-@Table(
-        name = "users",
-        uniqueConstraints = @jakarta.persistence.UniqueConstraint(name = "uk_users_email", columnNames = "email"),
-        indexes = {
-                @Index(name = "idx_users_role", columnList = "role"),
-                @Index(name = "idx_users_account_status", columnList = "account_status"),
-                @Index(name = "idx_users_created_at", columnList = "created_at")
-        }
-)
-@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
-@DiscriminatorColumn(name = "role", discriminatorType = DiscriminatorType.STRING)
-@DiscriminatorValue("USER")
-public abstract class User extends BaseEntity implements UserDetails, Notifiable {
+@Table(name = "users", uniqueConstraints = @UniqueConstraint(name = "uk_users_email", columnNames = "email"))
+@Inheritance(strategy = InheritanceType.JOINED)
+public abstract class User implements UserDetails {
 
-    @Column(name = "full_name", nullable = false, length = 120)
-    private String fullName;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "user_id")
+    private Long userId;
+
+    @Column(name = "name", nullable = false, length = 120)
+    private String name;
 
     @Column(name = "email", nullable = false, length = 190)
     private String email;
 
     @Column(name = "password_hash", nullable = false, length = 100)
-    private String passwordHash;
+    private String password;
 
-    /** Read-only mirror of the {@code role} discriminator column. */
-    @Column(name = "role", insertable = false, updatable = false, length = 30)
     @Enumerated(EnumType.STRING)
-    private Role role;
+    @Column(name = "status", nullable = false, length = 20)
+    private AccountStatus status;
 
-    @Column(name = "country", length = 80)
-    private String country;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false, length = 20)
+    private Role role;
 
     @Column(name = "phone", length = 30)
     private String phone;
 
-    /** Minimal-PII / consent requirement: registration is only allowed with explicit consent. */
-    @Column(name = "consent_given", nullable = false)
-    private boolean consentGiven;
+    @Column(name = "created_at", nullable = false)
+    private OffsetDateTime createdAt;
 
-    @Column(name = "account_status", nullable = false, length = 30)
-    @Enumerated(EnumType.STRING)
-    private AccountStatus accountStatus = AccountStatus.ACTIVE;
+    @Column(name = "last_login_at")
+    private OffsetDateTime lastLoginAt;
 
-    // ---------------------------------------------------------------------
-    // UserDetails (Spring Security contract)
-    // ---------------------------------------------------------------------
+    protected User() {
+        this.createdAt = OffsetDateTime.now();
+    }
+
+    protected User(Role role, String name, String email, String password) {
+        this();
+        this.role = role;
+        this.name = name;
+        this.email = email;
+        this.password = password;
+    }
+
+    /** Domain operation: applies the registration policy for the concrete role. */
+    public void register() {
+        if (createdAt == null) {
+            createdAt = OffsetDateTime.now();
+        }
+        if (role == Role.PARTICIPANT || role == Role.ADMIN) {
+            status = AccountStatus.ACTIVE;
+        } else {
+            status = AccountStatus.PENDING;
+        }
+    }
+
+    /** Domain operation: records a successful authentication. */
+    public void login() {
+        this.lastLoginAt = OffsetDateTime.now();
+    }
+
+    /** Stateless JWT logout is a client-side token discard; hook kept on the domain root. */
+    public void logout() {
+        this.lastLoginAt = this.lastLoginAt;
+    }
+
+    public boolean isActive() {
+        return status == AccountStatus.ACTIVE;
+    }
+
+    public boolean isPending() {
+        return status == AccountStatus.PENDING;
+    }
+
+    public boolean isSuspended() {
+        return status == AccountStatus.SUSPENDED;
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(role != null ? role.authority() : Role.PARTICIPANT.authority()));
+        return List.of(new SimpleGrantedAuthority("ROLE_" + (role == null ? "PARTICIPANT" : role.name())));
     }
 
     @Override
     public String getPassword() {
-        return passwordHash;
+        return password;
     }
 
     @Override
@@ -105,7 +131,7 @@ public abstract class User extends BaseEntity implements UserDetails, Notifiable
 
     @Override
     public boolean isAccountNonLocked() {
-        return accountStatus != AccountStatus.SUSPENDED;
+        return status != AccountStatus.SUSPENDED;
     }
 
     @Override
@@ -115,51 +141,23 @@ public abstract class User extends BaseEntity implements UserDetails, Notifiable
 
     @Override
     public boolean isEnabled() {
-        return accountStatus == AccountStatus.ACTIVE;
+        return status == AccountStatus.ACTIVE;
     }
 
-    // ---------------------------------------------------------------------
-    // Notifiable
-    // ---------------------------------------------------------------------
-
-    @Override
-    public String getNotificationAddress() {
-        return email;
+    public Long getUserId() {
+        return userId;
     }
 
-    @Override
-    public NotificationChannel getPreferredChannel() {
-        return NotificationChannel.EMAIL;
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
-    @Override
-    public String getNotificationLabel() {
-        return fullName;
+    public String getName() {
+        return name;
     }
 
-    // ---------------------------------------------------------------------
-    // Convenience
-    // ---------------------------------------------------------------------
-
-    /** Role-based test used by services for ownership / authorization rules. */
-    public boolean hasRole(Role required) {
-        return role == required;
-    }
-
-    public boolean isAdmin() {
-        return role == Role.ADMIN;
-    }
-
-    // ---------------------------------------------------------------------
-    // Accessors
-    // ---------------------------------------------------------------------
-
-    public String getFullName() {
-        return fullName;
-    }
-
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getEmail() {
@@ -170,12 +168,16 @@ public abstract class User extends BaseEntity implements UserDetails, Notifiable
         this.email = email;
     }
 
-    public String getPasswordHash() {
-        return passwordHash;
+    public void setPassword(String password) {
+        this.password = password;
     }
 
-    public void setPasswordHash(String passwordHash) {
-        this.passwordHash = passwordHash;
+    public AccountStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(AccountStatus status) {
+        this.status = status;
     }
 
     public Role getRole() {
@@ -186,14 +188,6 @@ public abstract class User extends BaseEntity implements UserDetails, Notifiable
         this.role = role;
     }
 
-    public String getCountry() {
-        return country;
-    }
-
-    public void setCountry(String country) {
-        this.country = country;
-    }
-
     public String getPhone() {
         return phone;
     }
@@ -202,19 +196,19 @@ public abstract class User extends BaseEntity implements UserDetails, Notifiable
         this.phone = phone;
     }
 
-    public boolean isConsentGiven() {
-        return consentGiven;
+    public OffsetDateTime getCreatedAt() {
+        return createdAt;
     }
 
-    public void setConsentGiven(boolean consentGiven) {
-        this.consentGiven = consentGiven;
+    public void setCreatedAt(OffsetDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
-    public AccountStatus getAccountStatus() {
-        return accountStatus;
+    public OffsetDateTime getLastLoginAt() {
+        return lastLoginAt;
     }
 
-    public void setAccountStatus(AccountStatus accountStatus) {
-        this.accountStatus = accountStatus;
+    public void setLastLoginAt(OffsetDateTime lastLoginAt) {
+        this.lastLoginAt = lastLoginAt;
     }
 }

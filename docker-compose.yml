@@ -1,0 +1,40 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: yep
+      POSTGRES_USER: yep
+      POSTGRES_PASSWORD: yep_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yep"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_URL: jdbc:postgresql://postgres:5432/yep
+      DB_USER: yep
+      DB_PASSWORD: yep_dev_password
+      JWT_SECRET: dev-only-secret-at-least-32-chars-long!!
+      JWT_EXPIRY_HOURS: "8"
+      FRONTEND_URL: "http://localhost:3000"
+      ALLOWED_ORIGINS: "http://localhost:3000"
+      ADMIN_EMAIL: admin@yep.dev
+      ADMIN_PASSWORD: Admin1234!
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:

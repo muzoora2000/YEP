@@ -2,32 +2,24 @@ package com.yep.security;
 
 import java.io.IOException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.yep.domain.user.User;
 import com.yep.repository.UserRepository;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-/**
- * Stateless authentication filter: reads the JWT (header or httpOnly cookie),
- * re-reads the account from the database so suspended users lose access
- * immediately, then populates the security context.
- */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
-
-    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     private final JwtService jwtService;
     private final UserRepository userRepository;
@@ -38,28 +30,57 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-
         if (SecurityContextHolder.getContext().getAuthentication() == null) {
-            String token = jwtService.extractToken(request);
+            String token = bearerToken(request);
+            if (token == null) {
+                token = cookieToken(request);
+            }
             if (token != null) {
-                try {
-                    AuthenticatedUser principal = jwtService.parse(token);
-                    if (principal.email() != null) {
-                        User user = userRepository.findByEmail(principal.email()).orElse(null);
-                        if (user != null && user.isEnabled()) {
-                            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                                    principal, null, user.getAuthorities());
-                            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                            SecurityContextHolder.getContext().setAuthentication(authentication);
-                        }
-                    }
-                } catch (JwtException | IllegalArgumentException ex) {
-                    log.debug("Rejected invalid JWT: {}", ex.getMessage());
-                }
+                authenticate(token);
             }
         }
-        chain.doFilter(request, response);
+        filterChain.doFilter(request, response);
+    }
+
+    private void authenticate(String token) {
+        try {
+            Claims claims = jwtService.parse(token);
+            Long userId = claims.get("userId", Long.class);
+            if (userId != null) {
+                User user = userRepository.findById(userId).orElse(null);
+                if (user != null && user.isActive()) {
+                    AuthenticatedUser principal = new AuthenticatedUser(user.getUserId(), user.getEmail(),
+                            user.getName(), user.getRole());
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            principal, null, principal.authorities());
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
+            }
+        } catch (JwtException | IllegalArgumentException ignored) {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    private String bearerToken(HttpServletRequest request) {
+        String header = request.getHeader("Authorization");
+        if (header != null && header.startsWith("Bearer ")) {
+            return header.substring(7);
+        }
+        return null;
+    }
+
+    private String cookieToken(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) {
+            return null;
+        }
+        for (Cookie cookie : cookies) {
+            if ("yep_token".equals(cookie.getName()) && !cookie.getValue().isBlank()) {
+                return cookie.getValue();
+            }
+        }
+        return null;
     }
 }

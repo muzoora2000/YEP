@@ -1,216 +1,418 @@
 /**
- * Mirror of the Spring Boot DTO contracts (`/api/v1/**`). Keeping them as
- * plain interfaces means the UI never guesses at a payload shape.
+ * Mirror of the Spring Boot DTO contracts (`/api/v1/**`).
  */
 
-export type Role = 'PARTICIPANT' | 'FACILITATOR' | 'MENTOR' | 'ADMIN';
-export type AccountStatus = 'ACTIVE' | 'SUSPENDED' | 'PENDING';
-export type ExchangeLevel = 'LEVEL_ONE' | 'LEVEL_TWO';
-export type ExchangeStatus = 'DRAFT' | 'OPEN' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
-export type LevelOneTopic =
-  | 'DIGITAL_LITERACY'
-  | 'AI_LITERACY'
-  | 'CRITICAL_THINKING'
-  | 'MEDIA_LITERACY'
-  | 'INTERCULTURAL_COMM';
-export type LevelTwoFocusArea =
+export type Role = 'PARTICIPANT' | 'FACILITATOR' | 'MENTOR' | 'ADMIN' | 'PARTNER';
+export type AccountStatus = 'PENDING' | 'ACTIVE' | 'SUSPENDED';
+export type ActivityLevel = 'ONE' | 'TWO';
+export type ActivityStatus = 'DRAFT' | 'PUBLISHED' | 'CLOSED' | 'COMPLETED';
+export type EnrollmentStatus = 'APPLIED' | 'ENROLLED' | 'REJECTED' | 'WAITLISTED' | 'COMPLETED' | 'CANCELLED';
+export type TeamStatus = 'OPEN' | 'FULL' | 'LOCKED';
+export type TeamMemberRole = 'LEADER' | 'MEMBER';
+export type ChallengeArea =
   | 'EMPLOYMENT'
   | 'EDUCATION'
   | 'AGRICULTURE'
   | 'HEALTH'
-  | 'CLIMATE'
+  | 'CLIMATE_CHANGE'
   | 'DIGITAL_INCLUSION';
-export type SkillLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
-export type CompletionStatus = 'ENROLLED' | 'IN_PROGRESS' | 'COMPLETED' | 'WITHDRAWN';
-export type ProjectStatus =
-  | 'DRAFT'
-  | 'SUBMITTED'
-  | 'UNDER_REVIEW'
-  | 'APPROVED'
-  | 'COMPLETED'
-  | 'REJECTED';
-export type AssessmentTargetType = 'PARTICIPANT' | 'TEAM';
-export type TeamMemberRole = 'LEAD' | 'MEMBER';
-export type AnnouncementScope = 'ALL_USERS' | 'EXCHANGE_COHORT' | 'TEAM';
-export type AiModerationStatus = 'PENDING' | 'APPROVED' | 'BLOCKED';
+export type ProjectStatus = 'DRAFT' | 'SUBMITTED' | 'UNDER_REVIEW' | 'CHANGES_REQUESTED' | 'APPROVED' | 'COMPLETED';
+export type MilestoneStatus = 'PENDING' | 'IN_PROGRESS' | 'DONE';
+export type ReviewDecision = 'COMMENT' | 'CHANGES_REQUESTED' | 'APPROVED';
+export type SessionStatus = 'SCHEDULED' | 'LIVE' | 'COMPLETED' | 'CANCELLED';
+export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'EXCUSED';
+export type MaterialType = 'VIDEO' | 'PDF' | 'LINK' | 'SLIDES' | 'TEXT';
+export type TaskType = 'QUIZ' | 'ASSIGNMENT';
+export type AssessmentStatus = 'SUBMITTED' | 'GRADED';
+export type NotificationType = 'IN_APP' | 'EMAIL' | 'SMS';
+export type OpportunityType = 'JOB' | 'INTERNSHIP' | 'MENTORSHIP' | 'SCHOLARSHIP' | 'TRAINING';
+export type OpportunityStatus = 'OPEN' | 'CLOSED';
+export type OrganisationType = 'NGO' | 'UNIVERSITY' | 'EMPLOYER' | 'DEVELOPMENT_AGENCY' | 'TECH_COMPANY';
+export type SupportType = 'FUNDING' | 'MENTORSHIP' | 'RESOURCES' | 'VISIBILITY';
+export type SupportStatus = 'OFFERED' | 'ACCEPTED' | 'DECLINED';
 
 export interface User {
-  id: number;
-  fullName: string;
+  userId: number;
+  name: string;
   email: string;
   role: Role;
-  country: string | null;
+  status: AccountStatus;
   phone: string | null;
-  accountStatus: AccountStatus;
-  consentGiven: boolean;
   createdAt: string;
+  lastLoginAt: string | null;
   age: number | null;
-  skillLevel: SkillLevel | null;
-  expertiseArea: string | null;
-  expertiseTopics: string | null;
-  sessionsFacilitated: number | null;
-  mentorshipAreas: string | null;
-  permissions: string | null;
+  country: string | null;
+  digitalSkills: string | null;
+  levelTwoEligible: boolean;
+  institution: string | null;
+  bio: string | null;
+  shareProfileWithPartners: boolean;
+  consentDate: string | null;
+  specialisation: string | null;
+  organisation: string | null;
+  expertise: string | null;
+  department: string | null;
+  organisationName: string | null;
+  organisationType: OrganisationType | null;
+  website: string | null;
+  description: string | null;
+  verified: boolean;
 }
 
 export interface AuthResponse {
   token: string;
   tokenType: string;
-  expiresInSeconds: number;
+  expiresIn: number;
   user: User;
 }
 
-export interface PageResponse<T> {
-  content: T[];
-  page: number;
-  size: number;
-  totalElements: number;
-  totalPages: number;
-  last: boolean;
+export interface RegisterResponse {
+  userId: number;
+  name: string;
+  email: string;
+  role: Role;
+  status: AccountStatus;
+  message: string;
 }
 
-export interface Exchange {
-  id: number;
+export interface PageResponse<T> {
+  items: T[];
+  page: number;
+  size: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+export interface Activity {
+  activityId: number;
+  level: ActivityLevel;
   title: string;
   description: string | null;
-  level: ExchangeLevel;
-  summaryLabel: string;
   startDate: string;
   endDate: string | null;
-  status: ExchangeStatus;
-  topic: LevelOneTopic | null;
-  maxParticipants: number | null;
-  sessionLink: string | null;
-  facilitatorId: number | null;
-  focusArea: LevelTwoFocusArea | null;
-  maxTeams: number | null;
-  applicationsOpen: boolean | null;
+  category: string | null;
+  capacity: number | null;
+  status: ActivityStatus;
+  passMark: number;
+  minAttendancePercent: number;
+  minTeamSize: number;
+  maxTeamSize: number;
+  facilitatorId: number;
+  facilitatorName: string;
+  partnerId: number | null;
+  partnerName: string | null;
   enrolledCount: number;
-  teamCount: number;
-  canEnroll: boolean;
+  waitlistedCount: number;
+  levelFeatures: string[];
 }
 
 export interface Enrollment {
-  id: number;
-  participantId: number | null;
-  participantName: string | null;
-  exchangeId: number | null;
-  exchangeTitle: string | null;
-  level: ExchangeLevel | null;
-  enrolledAt: string;
-  completionStatus: CompletionStatus;
+  enrollmentId: number;
+  activityId: number;
+  activityTitle: string;
+  youthId: number;
+  youthName: string;
+  youthEmail: string;
+  status: EnrollmentStatus;
+  enrollmentDate: string;
   completedAt: string | null;
 }
 
+export interface Session {
+  sessionId: number;
+  activityId: number;
+  title: string;
+  scheduledStart: string;
+  durationMinutes: number;
+  meetingLink: string;
+  status: SessionStatus;
+  checkInOpen: boolean;
+}
+
+export interface Attendance {
+  attendanceId: number;
+  sessionId: number;
+  youthId: number;
+  youthName: string;
+  status: AttendanceStatus;
+  markedAt: string;
+}
+
+export interface Material {
+  materialId: number;
+  activityId: number;
+  title: string;
+  materialType: MaterialType;
+  url: string;
+  description: string | null;
+  uploadedByName: string;
+  uploadedAt: string;
+  published: boolean;
+}
+
+export interface Thread {
+  threadId: number;
+  activityId: number;
+  teamId: number | null;
+  topic: string;
+  createdAt: string;
+  postCount: number;
+}
+
+export interface Post {
+  postId: number;
+  threadId: number;
+  authorId: number;
+  authorName: string;
+  content: string;
+  postedAt: string;
+  flagged: boolean;
+  flagReason: string | null;
+  hidden: boolean;
+}
+
+export interface Task {
+  taskId: number;
+  activityId: number;
+  title: string;
+  taskType: TaskType;
+  instructions: string | null;
+  questions: Record<string, unknown>[] | null;
+  maxScore: number;
+  dueDate: string | null;
+  published: boolean;
+}
+
+export interface Assessment {
+  assessmentId: number;
+  taskId: number;
+  taskTitle: string;
+  activityId: number;
+  youthId: number;
+  youthName: string;
+  score: number | null;
+  maxScore: number;
+  percentage: number;
+  status: AssessmentStatus;
+  feedback: string | null;
+  answers: number[] | null;
+  submissionText: string | null;
+  assessmentDate: string;
+  gradedByName: string | null;
+}
+
+export interface Certificate {
+  certificateId: number;
+  certificateNumber: string;
+  youthId: number;
+  youthName: string;
+  activityId: number;
+  activityTitle: string;
+  achievement: string;
+  issueDate: string;
+  revoked: boolean;
+}
+
+export interface Progress {
+  activityId: number;
+  activityTitle: string;
+  enrollmentStatus: EnrollmentStatus;
+  totalSessions: number;
+  attendedSessions: number;
+  attendancePercent: number | null;
+  gradedAssessments: number;
+  assessmentAverage: number;
+  passMark: number;
+  minAttendancePercent: number;
+  passedAssessments: boolean;
+  passedAttendance: boolean;
+  completed: boolean;
+  levelTwoEligible: boolean;
+  assessments: Assessment[];
+  certificates: Certificate[];
+}
+
 export interface TeamMember {
-  participantId: number | null;
-  fullName: string | null;
-  email: string | null;
-  memberRole: TeamMemberRole;
-  joinedAt: string;
+  memberId: number;
+  youthId: number;
+  name: string;
+  email: string;
+  role: TeamMemberRole;
 }
 
 export interface Team {
-  id: number;
-  name: string;
-  description: string | null;
-  levelTwoExchangeId: number | null;
-  exchangeTitle: string | null;
+  teamId: number;
+  activityId: number;
+  activityTitle: string;
+  teamName: string;
   mentorId: number | null;
   mentorName: string | null;
-  members: TeamMember[];
+  createdById: number;
+  createdByName: string;
+  status: TeamStatus;
   memberCount: number;
-  impactProjectId: number | null;
-  impactProjectTitle: string | null;
-  impactProjectStatus: string | null;
+  minTeamSize: number;
+  maxTeamSize: number;
+  members: TeamMember[];
+  projectId: number | null;
+  projectTitle: string | null;
+}
+
+export interface Milestone {
+  milestoneId: number;
+  projectId: number;
+  title: string;
+  dueDate: string | null;
+  status: MilestoneStatus;
+  completedAt: string | null;
+  overdue: boolean;
+}
+
+export interface Review {
+  reviewId: number;
+  projectId: number;
+  mentorId: number;
+  mentorName: string;
+  decision: ReviewDecision;
+  feedback: string;
   createdAt: string;
 }
 
 export interface Project {
-  id: number;
+  projectId: number;
+  teamId: number;
+  teamName: string;
+  activityId: number;
+  activityTitle: string;
   title: string;
-  problemStatement: string | null;
-  proposedSolution: string | null;
-  teamId: number | null;
-  teamName: string | null;
-  levelTwoExchangeId: number | null;
-  focusArea: LevelTwoFocusArea | null;
+  description: string | null;
+  challengeArea: ChallengeArea;
   status: ProjectStatus;
-  submissionDate: string | null;
-  aiAssisted: boolean;
-  aiUsageNote: string | null;
-  reviewFeedback: string | null;
-  reviewedAt: string | null;
+  aiUsed: boolean;
+  aiUsageDeclaration: string | null;
+  submittedAt: string | null;
+  openForSupport: boolean;
+  progressPercent: number;
+  overdue: boolean;
+  milestones: Milestone[];
+  reviews: Review[];
 }
 
-export interface Assessment {
-  id: number;
-  targetType: AssessmentTargetType;
-  targetId: number | null;
-  targetLabel: string | null;
-  assessorId: number | null;
-  assessorName: string | null;
-  criteria: string;
-  score: number;
-  feedback: string | null;
-  assessmentDate: string;
-  pass: boolean;
+export interface ParticipantRow {
+  youthId: number;
+  name: string;
+  country: string | null;
+  status: EnrollmentStatus;
+  attendancePercent: number | null;
+  resultsPercent: number | null;
+  lastActivityAt: string | null;
 }
 
-export interface Certificate {
-  id: number;
-  title: string;
-  recipientId: number | null;
-  recipientName: string | null;
-  issueDate: string;
-  verificationCode: string;
-  relatedActivityOrProject: string | null;
-}
-
-export interface CertificateVerification {
-  valid: boolean;
+export interface Notification {
+  notificationId: number;
+  type: NotificationType;
   message: string;
-  title: string | null;
-  recipientName: string | null;
-  issueDate: string | null;
-  relatedActivityOrProject: string | null;
-}
-
-export interface Message {
-  id: number;
-  messageType: string;
-  senderId: number | null;
-  senderName: string | null;
-  recipientId: number | null;
-  recipientName: string | null;
-  teamId: number | null;
-  exchangeId: number | null;
-  subject: string | null;
-  body: string;
+  link: string | null;
+  dateSent: string;
   read: boolean;
-  sentAt: string;
-  aiGenerated: boolean;
-  aiFlagReason: string | null;
-  aiModerationStatus: AiModerationStatus | null;
-  scope: AnnouncementScope | null;
-  published: boolean | null;
-  requiresHumanApproval: boolean | null;
 }
 
 export interface UnreadCount {
   unread: number;
-  pendingApprovals: number;
 }
 
-export interface AiSuggestion {
-  draft: string;
-  aiGenerated: boolean;
-  label: string;
-  reviewInstructions: string;
+export interface Opportunity {
+  opportunityId: number;
+  partnerId: number;
+  partnerName: string;
+  organisationName: string;
+  title: string;
+  opportunityType: OpportunityType;
+  description: string | null;
+  location: string | null;
+  deadline: string | null;
+  status: OpportunityStatus;
+  createdAt: string;
+  interestCount: number;
 }
 
-export interface AiModeration {
-  [key: string]: unknown;
+export interface Interest {
+  interestId: number;
+  opportunityId: number;
+  opportunityTitle: string;
+  youthId: number;
+  youthName: string;
+  youthEmail: string;
+  message: string | null;
+  createdAt: string;
+}
+
+export interface Support {
+  supportId: number;
+  projectId: number;
+  projectTitle: string;
+  partnerId: number;
+  partnerName: string;
+  organisationName: string;
+  supportType: SupportType;
+  message: string | null;
+  status: SupportStatus;
+  createdAt: string;
+}
+
+export interface PartnerSummary {
+  partnerId: number;
+  name: string;
+  email: string;
+  organisationName: string;
+  country: string | null;
+  organisationType: OrganisationType | null;
+  website: string | null;
+  description: string | null;
+  verified: boolean;
+}
+
+export interface PublicSettings {
+  platformName: string;
+  countries: string[];
+}
+
+export interface Dashboard {
+  totalUsers: number;
+  participants: number;
+  facilitators: number;
+  mentors: number;
+  partners: number;
+  administrators: number;
+  pendingUsers: number;
+  activeUsers: number;
+  activities: number;
+  publishedActivities: number;
+  enrollments: number;
+  teams: number;
+  projects: number;
+  approvedProjects: number;
+  certificates: number;
+  opportunities: number;
+  verifiedPartners: number;
+}
+
+export interface Setting {
+  key: string;
+  value: string;
+  updatedBy: number | null;
+  updatedAt: string | null;
+}
+
+export interface AuditLog {
+  logId: number;
+  userId: number | null;
+  userName: string | null;
+  action: string;
+  entity: string;
+  entityId: number | null;
+  details: string | null;
+  createdAt: string;
 }
 
 export interface ApiErrorBody {

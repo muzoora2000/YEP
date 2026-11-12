@@ -5,28 +5,13 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 
 /**
- * Uniform, bounded pagination envelope for every list endpoint
- * (keeps responses small on low-bandwidth connections).
+ * Generic pagination envelope returned by list endpoints: {items, page, size,
+ * totalItems, totalPages}.
  */
-public record PageResponse<T>(
-        List<T> content,
-        int page,
-        int size,
-        long totalElements,
-        int totalPages,
-        boolean last) {
+public record PageResponse<T>(List<T> items, int page, int size, long totalItems, int totalPages) {
 
     public static <T> PageResponse<T> from(Page<T> page) {
-        return new PageResponse<>(
-                page.getContent(),
-                page.getNumber(),
-                page.getSize(),
-                page.getTotalElements(),
-                page.getTotalPages(),
-                page.isLast());
-    }
-
-    public static <T> PageResponse<T> of(List<T> content) {
-        return new PageResponse<>(content, 0, Math.max(content.size(), 1), content.size(), 1, true);
+        return new PageResponse<>(page.getContent(), page.getNumber(), page.getSize(),
+                page.getTotalElements(), page.getTotalPages());
     }
 }

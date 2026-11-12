@@ -3,7 +3,9 @@ import { z } from 'zod';
 const password = z
   .string()
   .min(8, 'Password must be at least 8 characters')
-  .max(72, 'Password must be at most 72 characters');
+  .max(100, 'Password must be at most 100 characters')
+  .regex(/[A-Za-z]/, 'Password must include a letter')
+  .regex(/\d/, 'Password must include a number');
 
 export const loginSchema = z.object({
   email: z.string().email('Enter a valid email address'),
@@ -14,21 +16,26 @@ export type LoginValues = z.infer<typeof loginSchema>;
 
 export const registerSchema = z
   .object({
-    fullName: z.string().min(2, 'Tell us your full name').max(120),
+    name: z.string().min(2, 'Tell us your full name').max(120),
     email: z.string().email('Enter a valid email address').max(190),
     password,
     confirmPassword: z.string(),
+    role: z.enum(['PARTICIPANT', 'FACILITATOR', 'MENTOR', 'PARTNER']),
     country: z.string().max(80).optional(),
     phone: z.string().max(30).optional(),
-    role: z.enum(['PARTICIPANT', 'FACILITATOR', 'MENTOR']),
-    consentGiven: z.literal(true, {
-      errorMap: () => ({ message: 'You must accept the privacy consent to continue' }),
-    }),
-    age: z.coerce.number().int().min(16, 'Age must be 16 or older').max(40, 'Age must be 40 or younger').optional(),
-    skillLevel: z.enum(['BEGINNER', 'INTERMEDIATE', 'ADVANCED']).optional(),
-    expertiseArea: z.string().max(120).optional(),
-    expertiseTopics: z.string().max(400).optional(),
-    mentorshipAreas: z.string().max(400).optional(),
+    age: z.coerce.number().int().min(18, 'Participants must be 18 or older').max(35, 'Participants must be 35 or younger').optional(),
+    digitalSkills: z.string().max(80).optional(),
+    institution: z.string().max(190).optional(),
+    bio: z.string().max(1000).optional(),
+    shareProfileWithPartners: z.boolean().optional(),
+    specialisation: z.string().max(190).optional(),
+    organisation: z.string().max(190).optional(),
+    expertise: z.string().max(500).optional(),
+    department: z.string().max(190).optional(),
+    organisationName: z.string().max(190).optional(),
+    organisationType: z.enum(['NGO', 'UNIVERSITY', 'EMPLOYER', 'DEVELOPMENT_AGENCY', 'TECH_COMPANY']).optional(),
+    website: z.string().max(300).optional(),
+    description: z.string().max(2000).optional(),
   })
   .refine((values) => values.password === values.confirmPassword, {
     path: ['confirmPassword'],
@@ -37,120 +44,148 @@ export const registerSchema = z
   .refine((values) => values.role !== 'PARTICIPANT' || (values.age !== undefined && values.age !== null), {
     path: ['age'],
     message: 'Age is required for participants',
+  })
+  .refine((values) => values.role !== 'PARTNER' || !!values.organisationName, {
+    path: ['organisationName'],
+    message: 'Organisation name is required for partners',
   });
 
 export type RegisterValues = z.infer<typeof registerSchema>;
 
-export const exchangeSchema = z
-  .object({
-    title: z.string().min(4, 'Title is too short').max(180),
-    description: z.string().max(4000).optional(),
-    level: z.enum(['LEVEL_ONE', 'LEVEL_TWO']),
-    startDate: z.string().min(1, 'Start date is required'),
-    endDate: z.string().optional(),
-    status: z.enum(['DRAFT', 'OPEN', 'ACTIVE', 'COMPLETED', 'CANCELLED']).optional(),
-    topic: z
-      .enum(['DIGITAL_LITERACY', 'AI_LITERACY', 'CRITICAL_THINKING', 'MEDIA_LITERACY', 'INTERCULTURAL_COMM'])
-      .optional()
-      .or(z.literal('')),
-    maxParticipants: optionalPositiveInt(100000),
-    sessionLink: z.string().max(500).optional(),
-    focusArea: z
-      .enum(['EMPLOYMENT', 'EDUCATION', 'AGRICULTURE', 'HEALTH', 'CLIMATE', 'DIGITAL_INCLUSION'])
-      .optional()
-      .or(z.literal('')),
-    maxTeams: optionalPositiveInt(500),
-    applicationsOpen: z.boolean().optional(),
-  })
-  .superRefine((values, ctx) => {
-    if (values.level === 'LEVEL_ONE' && !values.topic) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['topic'],
-        message: 'Choose a topic for this Level One exchange',
-      });
-    }
-    if (values.level === 'LEVEL_TWO' && !values.focusArea) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['focusArea'],
-        message: 'Choose a focus area for this Level Two exchange',
-      });
-    }
-    if (values.startDate && values.endDate && values.endDate < values.startDate) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['endDate'],
-        message: 'End date cannot be before the start date',
-      });
-    }
-  });
-
-/** Blank optional number fields are sent as `''` by number inputs; treat them as "not set". */
-function optionalPositiveInt(max: number) {
-  return z.preprocess(
+export const adminUserSchema = z.object({
+  name: z.string().min(2, 'Name is required').max(120),
+  email: z.string().email('Enter a valid email address').max(190),
+  password,
+  role: z.enum(['PARTICIPANT', 'FACILITATOR', 'MENTOR', 'PARTNER', 'ADMIN']),
+  phone: z.string().max(30).optional(),
+  age: z.preprocess(
     (value) => (value === '' || value === null ? undefined : value),
-    z.coerce.number().int().min(1, 'Must be at least 1').max(max).optional(),
-  );
-}
-
-export type ExchangeValues = z.infer<typeof exchangeSchema>;
-
-export const projectSchema = z.object({
-  title: z.string().min(4, 'Title is too short').max(180),
-  problemStatement: z.string().max(4000).optional(),
-  proposedSolution: z.string().max(4000).optional(),
-  aiAssisted: z.boolean().optional(),
-  aiUsageNote: z
-    .string()
-    .max(2000)
-    .optional()
-    .refine((value) => !value || value.trim().length > 0, {
-      message: 'Describe how AI was used, or leave the box unticked',
-    }),
+    z.coerce.number().int().min(18).max(35).optional(),
+  ),
+  country: z.string().max(80).optional(),
+  organisationName: z.string().max(190).optional(),
+  organisationType: z.enum(['NGO', 'UNIVERSITY', 'EMPLOYER', 'DEVELOPMENT_AGENCY', 'TECH_COMPANY']).optional(),
 });
 
-export type ProjectValues = z.infer<typeof projectSchema>;
+export type AdminUserValues = z.infer<typeof adminUserSchema>;
+
+export const activitySchema = z
+  .object({
+    level: z.enum(['ONE', 'TWO']),
+    title: z.string().min(4, 'Title is too short').max(190),
+    description: z.string().max(4000).optional(),
+    startDate: z.string().min(1, 'Start date is required'),
+    endDate: z.string().optional(),
+    category: z.string().max(80).optional(),
+    capacity: z.preprocess(
+      (value) => (value === '' || value === null ? undefined : value),
+      z.coerce.number().int().min(1).optional(),
+    ),
+    passMark: z.preprocess(
+      (value) => (value === '' || value === null ? undefined : value),
+      z.coerce.number().int().min(0).max(100).optional(),
+    ),
+    minAttendancePercent: z.preprocess(
+      (value) => (value === '' || value === null ? undefined : value),
+      z.coerce.number().int().min(0).max(100).optional(),
+    ),
+    minTeamSize: z.preprocess(
+      (value) => (value === '' || value === null ? undefined : value),
+      z.coerce.number().int().min(1).optional(),
+    ),
+    maxTeamSize: z.preprocess(
+      (value) => (value === '' || value === null ? undefined : value),
+      z.coerce.number().int().min(1).optional(),
+    ),
+    facilitatorId: z.preprocess(
+      (value) => (value === '' || value === null ? undefined : value),
+      z.coerce.number().int().positive().optional(),
+    ),
+    partnerId: z.preprocess(
+      (value) => (value === '' || value === null ? undefined : value),
+      z.coerce.number().int().positive().optional(),
+    ),
+  })
+  .refine((values) => !values.endDate || values.endDate >= values.startDate, {
+    path: ['endDate'],
+    message: 'End date cannot be before the start date',
+  });
+
+export type ActivityValues = z.infer<typeof activitySchema>;
 
 export const teamSchema = z.object({
-  name: z.string().min(2, 'Team name is too short').max(120),
-  description: z.string().max(2000).optional(),
-  levelTwoExchangeId: z.coerce.number().int().positive('Choose a Level Two programme'),
+  activityId: z.coerce.number().int().positive('Choose a Level Two activity'),
+  teamName: z.string().min(2, 'Team name is too short').max(120),
+  mentorId: z.coerce.number().int().positive().optional(),
 });
 
 export type TeamValues = z.infer<typeof teamSchema>;
 
-export const assessmentSchema = z.object({
-  targetType: z.enum(['PARTICIPANT', 'TEAM']),
-  participantId: z.coerce.number().int().positive().optional(),
-  teamId: z.coerce.number().int().positive().optional(),
-  criteria: z.string().min(2, 'Criteria is required').max(200),
-  score: z.coerce.number().int().min(0, 'Score must be 0 or more').max(100, 'Score must be 100 or less'),
+export const projectSchema = z.object({
+  teamId: z.coerce.number().int().positive(),
+  title: z.string().min(4, 'Title is too short').max(190),
+  description: z.string().max(6000).optional(),
+  challengeArea: z.enum(['EMPLOYMENT', 'EDUCATION', 'AGRICULTURE', 'HEALTH', 'CLIMATE_CHANGE', 'DIGITAL_INCLUSION']),
+  aiUsed: z.boolean().optional(),
+  aiUsageDeclaration: z.string().max(2000).optional(),
+});
+
+export type ProjectValues = z.infer<typeof projectSchema>;
+
+export const milestoneSchema = z.object({
+  title: z.string().min(2, 'Milestone title is too short').max(190),
+  dueDate: z.string().optional(),
+});
+
+export type MilestoneValues = z.infer<typeof milestoneSchema>;
+
+export const reviewSchema = z.object({
+  decision: z.enum(['COMMENT', 'CHANGES_REQUESTED', 'APPROVED']),
+  feedback: z.string().min(2, 'Feedback is required').max(4000),
+});
+
+export type ReviewValues = z.infer<typeof reviewSchema>;
+
+export const taskSchema = z.object({
+  title: z.string().min(2, 'Title is required').max(190),
+  taskType: z.enum(['QUIZ', 'ASSIGNMENT']),
+  instructions: z.string().max(4000).optional(),
+  maxScore: z.preprocess(
+    (value) => (value === '' || value === null ? undefined : value),
+    z.coerce.number().int().min(1).max(1000).optional(),
+  ),
+  dueDate: z.string().optional(),
+  published: z.boolean().optional(),
+});
+
+export type TaskValues = z.infer<typeof taskSchema>;
+
+export const submissionSchema = z.object({
+  submissionText: z.string().min(1, 'Write your answer').max(6000),
+});
+
+export type SubmissionValues = z.infer<typeof submissionSchema>;
+
+export const gradeSchema = z.object({
+  score: z.coerce.number().int().min(0),
   feedback: z.string().max(4000).optional(),
 });
 
-export type AssessmentValues = z.infer<typeof assessmentSchema>;
+export type GradeValues = z.infer<typeof gradeSchema>;
 
-export const messageSchema = z
-  .object({
-    recipientId: z.coerce.number().int().positive().optional(),
-    teamId: z.coerce.number().int().positive().optional(),
-    subject: z.string().max(200).optional(),
-    body: z.string().min(1, 'Write a message').max(4000),
-  })
-  .refine((value) => value.recipientId !== undefined || value.teamId !== undefined, {
-    path: ['recipientId'],
-    message: 'Pick a recipient or a team',
-  });
-
-export type MessageValues = z.infer<typeof messageSchema>;
-
-export const announcementSchema = z.object({
-  subject: z.string().min(2, 'Subject is required').max(200),
-  body: z.string().min(2, 'Body is required').max(4000),
-  scope: z.enum(['ALL_USERS', 'EXCHANGE_COHORT', 'TEAM']).optional(),
-  exchangeId: z.coerce.number().int().positive().optional(),
-  teamId: z.coerce.number().int().positive().optional(),
+export const opportunitySchema = z.object({
+  title: z.string().min(4, 'Title is too short').max(190),
+  opportunityType: z.enum(['JOB', 'INTERNSHIP', 'MENTORSHIP', 'SCHOLARSHIP', 'TRAINING']),
+  description: z.string().max(4000).optional(),
+  location: z.string().max(190).optional(),
+  deadline: z.string().optional(),
 });
 
-export type AnnouncementValues = z.infer<typeof announcementSchema>;
+export type OpportunityValues = z.infer<typeof opportunitySchema>;
+
+export const supportSchema = z.object({
+  supportType: z.enum(['FUNDING', 'MENTORSHIP', 'RESOURCES', 'VISIBILITY']),
+  message: z.string().max(2000).optional(),
+});
+
+export type SupportValues = z.infer<typeof supportSchema>;

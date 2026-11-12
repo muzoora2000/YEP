@@ -10,94 +10,64 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.DisabledException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 
-/**
- * Turns every exception into a stable, machine readable JSON error body so the
- * frontend can display friendly messages even on slow connections.
- */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    public record ApiError(
-            OffsetDateTime timestamp,
-            int status,
-            String error,
-            String code,
-            String message,
-            String path,
+    public record ApiError(OffsetDateTime timestamp, int status, String code, String message,
             Map<String, String> fieldErrors) {
     }
 
     @ExceptionHandler(ApiException.class)
-    public ResponseEntity<ApiError> handleApi(ApiException ex, HttpServletRequest request) {
-        return respond(ex.getStatus(), ex.getCode(), ex.getMessage(), request, null);
+    public ResponseEntity<ApiError> handleApi(ApiException exception) {
+        return response(exception.getStatus(), exception.getCode(), exception.getMessage(), Map.of());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {
-        Map<String, String> fields = new LinkedHashMap<>();
-        for (FieldError error : ex.getBindingResult().getFieldErrors()) {
-            fields.putIfAbsent(error.getField(), error.getDefaultMessage());
+    public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException exception) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        for (FieldError error : exception.getBindingResult().getFieldErrors()) {
+            errors.putIfAbsent(error.getField(), error.getDefaultMessage());
         }
-        String message = fields.isEmpty() ? "Validation failed" : fields.values().iterator().next();
-        return respond(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", message, request, fields);
+        return response(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", "Please correct the highlighted fields.", errors);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiError> handleConstraint(ConstraintViolationException exception) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        exception.getConstraintViolations().forEach(violation -> errors.put(violation.getPropertyPath().toString(),
+                violation.getMessage()));
+        return response(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", "Please correct the highlighted fields.", errors);
     }
 
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ApiError> handleBadCredentials(BadCredentialsException ex, HttpServletRequest request) {
-        return respond(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", "Invalid email or password", request, null);
-    }
-
-    @ExceptionHandler(DisabledException.class)
-    public ResponseEntity<ApiError> handleDisabled(DisabledException ex, HttpServletRequest request) {
-        return respond(HttpStatus.FORBIDDEN, "ACCOUNT_DISABLED", "This account is not active", request, null);
+    public ResponseEntity<ApiError> handleBadCredentials(BadCredentialsException exception) {
+        return response(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", "Email or password is incorrect.", Map.of());
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
-        return respond(HttpStatus.FORBIDDEN, "FORBIDDEN", "You do not have permission to perform this action",
-                request, null);
-    }
-
-    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ApiError> handleTypeMismatch(MethodArgumentTypeMismatchException ex,
-            HttpServletRequest request) {
-        return respond(HttpStatus.BAD_REQUEST, "BAD_REQUEST",
-                "Invalid value for parameter '" + ex.getName() + "'", request, null);
-    }
-
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ApiError> handleIllegalArgument(IllegalArgumentException ex, HttpServletRequest request) {
-        return respond(HttpStatus.BAD_REQUEST, "BAD_REQUEST", ex.getMessage(), request, null);
+    public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException exception) {
+        return response(HttpStatus.FORBIDDEN, "FORBIDDEN", "You do not have permission to do that.", Map.of());
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiError> handleUnexpected(Exception ex, HttpServletRequest request) {
-        log.error("Unhandled error on {} {}", request.getMethod(), request.getRequestURI(), ex);
-        return respond(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR",
-                "Something went wrong. Please try again.", request, null);
+    public ResponseEntity<ApiError> handleUnexpected(Exception exception) {
+        log.error("Unhandled API error", exception);
+        return response(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR",
+                "Something went wrong. Please try again.", Map.of());
     }
 
-    private ResponseEntity<ApiError> respond(HttpStatus status, String code, String message,
-            HttpServletRequest request, Map<String, String> fieldErrors) {
-        ApiError body = new ApiError(
-                OffsetDateTime.now(),
-                status.value(),
-                status.getReasonPhrase(),
-                code,
-                message,
-                request.getRequestURI(),
-                fieldErrors);
-        return ResponseEntity.status(status).body(body);
+    private ResponseEntity<ApiError> response(HttpStatus status, String code, String message,
+            Map<String, String> fieldErrors) {
+        return ResponseEntity.status(status)
+                .body(new ApiError(OffsetDateTime.now(), status.value(), code, message, fieldErrors));
     }
 }

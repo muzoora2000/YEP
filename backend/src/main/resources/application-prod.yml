@@ -1,29 +1,54 @@
-# Production profile (Render). Schema is owned by Flyway migrations under db/migration.
-# DATABASE_URL may be given in postgres:// form - PostgresUrlEnvironmentPostProcessor
-# rewrites it to a JDBC URL automatically.
 spring:
   datasource:
-    url: ${DATABASE_URL}
-    username: ${DATABASE_USERNAME:}
-    password: ${DATABASE_PASSWORD:}
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
     hikari:
-      maximum-pool-size: ${DB_POOL_SIZE:10}
-      connection-timeout: 20000
+      maximum-pool-size: 5
+      connection-timeout: 30000
+      keepalive-time: 240000
+      max-lifetime: 600000
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: false
+    open-in-view: false
   flyway:
     enabled: true
+    url: ${DB_DIRECT_URL:${DB_URL}}
     locations: classpath:db/migration
-    baseline-on-migrate: true
     validate-on-migrate: true
-
-yep:
-  cors:
-    allowed-origins: ${ALLOWED_ORIGINS}
-  cookie:
-    secure: true
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USER:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 server:
+  port: ${PORT:8080}
   forward-headers-strategy: framework
+  compression:
+    enabled: true
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+yep:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiry-hours: ${JWT_EXPIRY_HOURS:8}
+  frontend-url: ${FRONTEND_URL}
+  cors:
+    allowed-origins: ${ALLOWED_ORIGINS}
+  mail-from: ${MAIL_FROM:}
+  africas-talking:
+    username: ${AT_USERNAME:}
+    api-key: ${AT_API_KEY:}

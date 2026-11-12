@@ -1,69 +1,53 @@
 package com.yep.domain.user;
 
-import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import com.yep.domain.team.Team;
+import com.yep.domain.enums.ReviewDecision;
+import com.yep.domain.enums.Role;
+import com.yep.domain.project.ImpactProject;
+import com.yep.domain.project.ProjectReview;
+import com.yep.domain.project.Team;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrimaryKeyJoinColumn;
+import jakarta.persistence.Table;
 
-/**
- * An industry / academic mentor guiding level two teams.
- *
- * <p>Mentorship areas are stored as a comma separated value on the shared
- * {@code users} table so the physical schema stays exactly as specified.</p>
- */
 @Entity
-@DiscriminatorValue("MENTOR")
+@Table(name = "mentor")
+@PrimaryKeyJoinColumn(name = "mentor_id")
 public class Mentor extends User {
 
-    @Column(name = "mentorship_areas", length = 400)
-    private String mentorshipAreas;
+    @Column(name = "organisation", length = 190)
+    private String organisation;
 
-    @OneToMany(mappedBy = "mentor", fetch = FetchType.LAZY)
-    private Set<Team> menteeTeams = new LinkedHashSet<>();
+    @Column(name = "expertise", length = 500)
+    private String expertise;
 
-    public boolean guides(Team team) {
-        return menteeTeams != null && menteeTeams.contains(team);
+    public Mentor() {
+        super();
+        setRole(Role.MENTOR);
     }
 
-    public boolean covers(String area) {
-        if (mentorshipAreas == null || mentorshipAreas.isBlank()) {
-            return true;
-        }
-        return areaSet().contains(area.toUpperCase());
+    public void mentorTeam(Team team) {
+        team.setMentor(this);
     }
 
-    public Set<String> areaSet() {
-        if (mentorshipAreas == null || mentorshipAreas.isBlank()) {
-            return Set.of();
-        }
-        return Arrays.stream(mentorshipAreas.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .map(String::toUpperCase)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+    public ProjectReview provideFeedback(ImpactProject project, ReviewDecision decision, String feedback) {
+        return new ProjectReview(project, this, decision, feedback);
     }
 
-    public String getMentorshipAreas() {
-        return mentorshipAreas;
+    public String getOrganisation() {
+        return organisation;
     }
 
-    public void setMentorshipAreas(String mentorshipAreas) {
-        this.mentorshipAreas = mentorshipAreas;
+    public void setOrganisation(String organisation) {
+        this.organisation = organisation;
     }
 
-    public Set<Team> getMenteeTeams() {
-        return menteeTeams;
+    public String getExpertise() {
+        return expertise;
     }
 
-    public void setMenteeTeams(Set<Team> menteeTeams) {
-        this.menteeTeams = menteeTeams;
+    public void setExpertise(String expertise) {
+        this.expertise = expertise;
     }
 }

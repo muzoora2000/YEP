@@ -2,32 +2,31 @@ package com.yep.security;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 
 import com.yep.exception.UnauthorizedException;
 
-/** Small facade over the security context used by services and controllers. */
-public final class SecurityUtils {
+@Component
+public class SecurityUtils {
 
-    private SecurityUtils() {
+    public AuthenticatedUser currentUser() {
+        AuthenticatedUser user = currentUserOrNull();
+        if (user == null) {
+            throw new UnauthorizedException("AUTHENTICATION_REQUIRED", "Please sign in to continue.");
+        }
+        return user;
     }
 
-    public static AuthenticatedUser currentOrNull() {
+    /** Returns null for anonymous requests (public endpoints); no exception. */
+    public AuthenticatedUser currentUserOrNull() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !(authentication.getPrincipal() instanceof AuthenticatedUser principal)) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof AuthenticatedUser user)) {
             return null;
         }
-        return principal;
+        return user;
     }
 
-    public static AuthenticatedUser current() {
-        AuthenticatedUser principal = currentOrNull();
-        if (principal == null) {
-            throw new UnauthorizedException("Authentication required");
-        }
-        return principal;
-    }
-
-    public static Long currentUserId() {
-        return current().id();
+    public Long currentUserId() {
+        return currentUser().userId();
     }
 }

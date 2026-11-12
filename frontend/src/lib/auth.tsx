@@ -3,29 +3,35 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { ApiError, api, setAccessToken } from './api';
-import type { AuthResponse, Role, User } from './types';
+import type { AuthResponse, OrganisationType, RegisterResponse, Role, User } from './types';
 
-interface RegisterInput {
-  fullName: string;
+export interface RegisterInput {
+  name: string;
   email: string;
   password: string;
-  country?: string;
-  phone?: string;
   role: Role;
-  consentGiven: boolean;
+  phone?: string;
   age?: number;
-  skillLevel?: string;
-  expertiseArea?: string;
-  expertiseTopics?: string;
-  mentorshipAreas?: string;
+  country?: string;
+  digitalSkills?: string;
+  institution?: string;
+  bio?: string;
+  shareProfileWithPartners?: boolean;
+  specialisation?: string;
+  organisation?: string;
+  expertise?: string;
+  department?: string;
+  organisationName?: string;
+  organisationType?: OrganisationType;
+  website?: string;
+  description?: string;
 }
 
 interface AuthContextValue {
   user: User | null;
-  /** True while the session is being restored from the httpOnly cookie. */
   loading: boolean;
   login: (email: string, password: string) => Promise<User>;
-  register: (input: RegisterInput) => Promise<User>;
+  register: (input: RegisterInput) => Promise<RegisterResponse>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
   isStaff: boolean;
@@ -43,7 +49,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(me);
     } catch (error) {
       if (error instanceof ApiError && error.status !== 0 && error.status !== 401 && error.status !== 403) {
-        // Unexpected backend failure: keep the previous user instead of logging out.
         return;
       }
       setAccessToken(null);
@@ -72,20 +77,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return response.user;
   }, []);
 
-  const register = useCallback(async (input: RegisterInput) => {
-    const created = await api<User>('/api/v1/auth/register', { method: 'POST', body: input });
-    try {
-      const response = await api<AuthResponse>('/api/v1/auth/login', {
+  const register = useCallback(
+    async (input: RegisterInput) => {
+      const created = await api<RegisterResponse>('/api/v1/auth/register', {
         method: 'POST',
-        body: { email: input.email, password: input.password },
+        body: input,
       });
-      setAccessToken(response.token);
-      setUser(response.user);
-    } catch {
-      setUser(created);
-    }
-    return created;
-  }, []);
+      try {
+        const response = await api<AuthResponse>('/api/v1/auth/login', {
+          method: 'POST',
+          body: { email: input.email, password: input.password },
+        });
+        setAccessToken(response.token);
+        setUser(response.user);
+      } catch {
+        setUser(null);
+      }
+      return created;
+    },
+    [],
+  );
 
   const logout = useCallback(async () => {
     try {

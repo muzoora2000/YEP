@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from 'next';
+import Link from 'next/link';
 
 import { Navbar } from '@/components/Navbar';
 import { Providers } from '@/components/Providers';
+import { OfflineBanner } from '@/components/ui/Feedback';
+import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
 
 import './globals.css';
 
@@ -48,12 +51,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <footer className="border-t border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
             <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 dark:text-slate-400">
               <p>YEP - Youth Digital Empowerment and Virtual Exchange Platform</p>
-              <p>
-                Responsible AI: AI-drafted content is always labelled and approved by a human facilitator
-                before publishing.
-              </p>
+              <div className="flex flex-wrap gap-4">
+                <Link href="/responsible-ai" className="hover:text-brand-700 hover:underline dark:hover:text-brand-300">Responsible AI</Link>
+                <Link href="/privacy" className="hover:text-brand-700 hover:underline dark:hover:text-brand-300">Privacy</Link>
+                <Link href="/certificates/verify" className="hover:text-brand-700 hover:underline dark:hover:text-brand-300">Verify certificate</Link>
+              </div>
             </div>
           </footer>
+          <OfflineBanner />
+          <ServiceWorkerRegister />
         </Providers>
       </body>
     </html>

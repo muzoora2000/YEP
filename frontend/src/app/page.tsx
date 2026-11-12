@@ -31,9 +31,14 @@ const features = [
       'Facilitators and mentors assess participants and teams; every completion produces a publicly verifiable certificate.',
   },
   {
-    title: 'Messaging & announcements',
+    title: 'Discussions & notifications',
     description:
-      'Direct messages, team messages and cohort announcements, with unread counts and moderation for AI-drafted text.',
+      'Activity discussion threads, team conversations and in-app notifications keep participants, facilitators and mentors in step.',
+  },
+  {
+    title: 'Opportunities & partner support',
+    description:
+      'Verified partners publish jobs, internships, mentorships, scholarships and training, and can support impact projects.',
   },
   {
     title: 'Responsible AI by default',
@@ -43,7 +48,7 @@ const features = [
 ];
 
 const steps = [
-  'Create an account and give consent',
+  'Create an account and choose your pathway',
   'Browse and enrol in a virtual exchange',
   'Form a team inside a Level Two programme',
   'Build and submit an impact project',
@@ -108,18 +113,21 @@ export default function HomePage() {
         <Card>
           <CardTitle>Built for low bandwidth</CardTitle>
           <CardDescription>
-            YEP is a progressive web app: it installs on a phone, keeps an offline shell, lazy-loads images
-            and paginates every API response, so it stays usable on a metered connection.
+            YEP is mobile-first: pages are lightweight, images lazy-load and every list is paginated, so it
+            stays usable on a metered connection.
           </CardDescription>
           <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium text-slate-600 dark:text-slate-300">
-            <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1">PWA offline shell</span>
+            <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1">Mobile-first layouts</span>
             <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1">WCAG 2.1 AA patterns</span>
             <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1">BCrypt + JWT</span>
-            <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1">Consent-first registration</span>
+            <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1">Role-based workspaces</span>
           </div>
-          <div className="mt-5">
-            <Link href="/certificates/verify" className="text-sm font-semibold text-brand-700 dark:text-brand-300 hover:underline">
-              Verify an existing certificate →
+          <div className="mt-5 flex flex-wrap gap-4">
+            <Link href="/certificates/verify" className="text-sm font-semibold text-brand-700 hover:underline dark:text-brand-300">
+              Verify an existing certificate -&gt;
+            </Link>
+            <Link href="/opportunities" className="text-sm font-semibold text-brand-700 hover:underline dark:text-brand-300">
+              Browse opportunities -&gt;
             </Link>
           </div>
         </Card>

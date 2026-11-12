@@ -27,12 +27,12 @@ export default function CertificateLookupPage() {
           if (trimmed) router.push(`/certificates/${encodeURIComponent(trimmed)}`);
         }}
       >
-        <Field label="Verification code" htmlFor="verification-code" required hint="Example: YEP-2026-4F7K-9QZ2">
+        <Field label="Certificate number" htmlFor="verification-code" required hint="Example: YEP-2026-4F7K9QZ2AB12">
           <Input
             id="verification-code"
             value={code}
             onChange={(event) => setCode(event.target.value)}
-            placeholder="YEP-2026-XXXX-XXXX"
+            placeholder="YEP-2026-XXXXXXXXXXXX"
             autoComplete="off"
           />
         </Field>

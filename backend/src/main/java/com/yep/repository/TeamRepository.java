@@ -4,22 +4,18 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
-import com.yep.domain.team.Team;
+import com.yep.domain.project.Team;
 
 public interface TeamRepository extends JpaRepository<Team, Long> {
 
-    List<Team> findByLevelTwoExchangeId(Long exchangeId);
+    List<Team> findByActivityActivityId(Long activityId);
 
-    Optional<Team> findByNameIgnoreCase(String name);
+    List<Team> findByMentorUserId(Long mentorId);
 
-    boolean existsByNameIgnoreCase(String name);
+    Optional<Team> findFirstByActivityActivityIdAndTeamNameIgnoreCase(Long activityId, String teamName);
 
-    @Query("SELECT t FROM Team t JOIN t.teamMembers tm WHERE tm.participant.id = :participantId")
-    List<Team> findByParticipant(@Param("participantId") Long participantId);
+    long countByMentorUserId(Long mentorId);
 
-    @Query("SELECT t FROM Team t WHERE t.mentor.id = :mentorId")
-    List<Team> findByMentor(@Param("mentorId") Long mentorId);
+    boolean existsByActivityActivityIdAndMentorUserId(Long activityId, Long mentorUserId);
 }

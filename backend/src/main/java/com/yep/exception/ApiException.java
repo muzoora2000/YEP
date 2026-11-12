@@ -2,13 +2,12 @@ package com.yep.exception;
 
 import org.springframework.http.HttpStatus;
 
-/** Base class for all business (and transport) errors raised by the API. */
-public abstract class ApiException extends RuntimeException {
+public class ApiException extends RuntimeException {
 
     private final HttpStatus status;
     private final String code;
 
-    protected ApiException(HttpStatus status, String code, String message) {
+    public ApiException(HttpStatus status, String code, String message) {
         super(message);
         this.status = status;
         this.code = code;

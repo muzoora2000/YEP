@@ -5,17 +5,24 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.yep.domain.exchange.Enrollment;
+import com.yep.domain.enums.EnrollmentStatus;
+import com.yep.domain.learning.Enrollment;
 
 public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
 
-    Optional<Enrollment> findByParticipantIdAndVirtualExchangeId(Long participantId, Long exchangeId);
+    List<Enrollment> findByYouthUserId(Long youthId);
 
-    boolean existsByParticipantIdAndVirtualExchangeId(Long participantId, Long exchangeId);
+    List<Enrollment> findByActivityActivityId(Long activityId);
 
-    List<Enrollment> findByParticipantId(Long participantId);
+    List<Enrollment> findByActivityActivityIdAndStatus(Long activityId, EnrollmentStatus status);
 
-    List<Enrollment> findByVirtualExchangeId(Long exchangeId);
+    Optional<Enrollment> findByYouthUserIdAndActivityActivityId(Long youthId, Long activityId);
 
-    long countByVirtualExchangeId(Long exchangeId);
+    boolean existsByYouthUserIdAndActivityActivityId(Long youthId, Long activityId);
+
+    long countByActivityActivityIdAndStatus(Long activityId, EnrollmentStatus status);
+
+    Optional<Enrollment> findFirstByActivityActivityIdAndStatusOrderByEnrollmentDateAsc(Long activityId, EnrollmentStatus status);
+
+    long countByActivityActivityIdAndStatusIn(Long activityId, List<EnrollmentStatus> statuses);
 }

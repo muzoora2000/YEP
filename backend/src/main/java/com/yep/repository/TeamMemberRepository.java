@@ -5,17 +5,19 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.yep.domain.team.TeamMember;
+import com.yep.domain.project.TeamMember;
 
 public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
 
-    Optional<TeamMember> findByTeamIdAndParticipantId(Long teamId, Long participantId);
+    List<TeamMember> findByTeamTeamId(Long teamId);
 
-    boolean existsByTeamIdAndParticipantId(Long teamId, Long participantId);
+    List<TeamMember> findByYouthUserId(Long youthId);
 
-    List<TeamMember> findByTeamId(Long teamId);
+    Optional<TeamMember> findByTeamTeamIdAndYouthUserId(Long teamId, Long youthId);
 
-    List<TeamMember> findByParticipantId(Long participantId);
+    boolean existsByTeamTeamIdAndYouthUserId(Long teamId, Long youthId);
 
-    void deleteByTeamIdAndParticipantId(Long teamId, Long participantId);
+    boolean existsByYouthUserIdAndTeamActivityActivityId(Long youthId, Long activityId);
+
+    long countByTeamTeamId(Long teamId);
 }

@@ -1,166 +1,149 @@
 package com.yep.domain.project;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
-import com.yep.domain.base.BaseEntity;
+import com.yep.domain.enums.ChallengeArea;
+import com.yep.domain.enums.MilestoneStatus;
 import com.yep.domain.enums.ProjectStatus;
-import com.yep.domain.interfaces.Certifiable;
-import com.yep.domain.team.Team;
-import com.yep.domain.user.Participant;
-import com.yep.domain.user.User;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.Index;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
-/**
- * The real-world problem a level two team is solving.
- * Implements {@link Certifiable}: a completed project generates certificates
- * for every member of its team.
- */
 @Entity
-@Table(
-        name = "impact_projects",
-        indexes = {
-                @Index(name = "idx_impact_projects_team_id", columnList = "team_id"),
-                @Index(name = "idx_impact_projects_status", columnList = "status")
-        }
-)
-public class ImpactProject extends BaseEntity implements Certifiable {
+@Table(name = "impact_project")
+public class ImpactProject {
 
-    @Column(name = "title", nullable = false, length = 180)
-    private String title;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "project_id")
+    private Long projectId;
 
-    @Column(name = "problem_statement", length = 4000)
-    private String problemStatement;
-
-    @Column(name = "proposed_solution", length = 4000)
-    private String proposedSolution;
-
-    @OneToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "team_id", nullable = false, unique = true)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "team_id", nullable = false)
     private Team team;
 
-    @Column(name = "status", nullable = false, length = 30)
+    @Column(name = "title", nullable = false, length = 190)
+    private String title;
+
+    @Column(name = "description", length = 6000)
+    private String description;
+
     @Enumerated(EnumType.STRING)
+    @Column(name = "challenge_area", nullable = false, length = 40)
+    private ChallengeArea challengeArea;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 30)
     private ProjectStatus status = ProjectStatus.DRAFT;
 
-    @Column(name = "submission_date")
-    private OffsetDateTime submissionDate;
+    @Column(name = "ai_used", nullable = false)
+    private boolean aiUsed = false;
 
-    /** Responsible-AI labelling: content assisted by an AI tool must be flagged. */
-    @Column(name = "ai_assisted", nullable = false)
-    private boolean aiAssisted;
+    @Column(name = "ai_usage_declaration", length = 2000)
+    private String aiUsageDeclaration;
 
-    /** Written statement of how AI was used and what the human reviewer changed. */
-    @Column(name = "ai_usage_note", length = 2000)
-    private String aiUsageNote;
+    @Column(name = "submitted_at")
+    private OffsetDateTime submittedAt;
 
-    @Column(name = "review_feedback", length = 4000)
-    private String reviewFeedback;
+    @Column(name = "open_for_support", nullable = false)
+    private boolean openForSupport = false;
 
-    @Column(name = "reviewed_by_id")
-    private Long reviewedById;
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Milestone> milestones = new ArrayList<>();
 
-    @Column(name = "reviewed_at")
-    private OffsetDateTime reviewedAt;
-
-    public static ImpactProject draftFor(Team team, String title) {
-        ImpactProject project = new ImpactProject();
-        project.team = team;
-        project.title = title;
-        project.status = ProjectStatus.DRAFT;
-        return project;
+    protected ImpactProject() {
     }
 
-    public void submit() {
+    public ImpactProject(Team team, String title) {
+        this.team = team;
+        this.title = title;
+    }
+
+    public void createProject(String description, ChallengeArea challengeArea) {
+        this.description = description;
+        this.challengeArea = challengeArea;
+        this.status = ProjectStatus.DRAFT;
+    }
+
+    public void updateProject(String title, String description, ChallengeArea challengeArea) {
+        if (!isEditable()) {
+            throw new IllegalStateException("Project can only be edited while DRAFT or CHANGES_REQUESTED");
+        }
+        this.title = title;
+        this.description = description;
+        this.challengeArea = challengeArea;
+    }
+
+    public void submitProject() {
+        if (milestones.size() < 2) {
+            throw new IllegalStateException("At least two milestones are required before submission");
+        }
+        if (aiUsed && (aiUsageDeclaration == null || aiUsageDeclaration.isBlank())) {
+            throw new IllegalStateException("An AI usage declaration is required when AI was used");
+        }
         this.status = ProjectStatus.SUBMITTED;
-        this.submissionDate = OffsetDateTime.now();
+        this.submittedAt = OffsetDateTime.now();
     }
 
-    public void startReview() {
+    public void openForReview() {
+        if (status != ProjectStatus.SUBMITTED) {
+            throw new IllegalStateException("Only a submitted project can be opened for review");
+        }
         this.status = ProjectStatus.UNDER_REVIEW;
     }
 
-    public void approve(String feedback, User reviewer) {
+    public void requestChanges() {
+        this.status = ProjectStatus.CHANGES_REQUESTED;
+    }
+
+    public void approve() {
         this.status = ProjectStatus.APPROVED;
-        this.reviewFeedback = feedback;
-        this.reviewedById = reviewer != null ? reviewer.getId() : null;
-        this.reviewedAt = OffsetDateTime.now();
     }
 
     public void complete() {
         this.status = ProjectStatus.COMPLETED;
     }
 
-    public boolean canBeSubmitted() {
-        return status == ProjectStatus.DRAFT || status == ProjectStatus.SUBMITTED;
+    public boolean isEditable() {
+        return status == ProjectStatus.DRAFT || status == ProjectStatus.CHANGES_REQUESTED;
     }
 
-    public boolean isCompleted() {
-        return status == ProjectStatus.COMPLETED;
-    }
-
-    // ---------------------------------------------------------------------
-    // Certifiable
-    // ---------------------------------------------------------------------
-
-    @Override
-    public String getCertificateTitle() {
-        return "Impact Project Completion - " + title;
-    }
-
-    @Override
-    public String getCertificateReference() {
-        return title;
-    }
-
-    @Override
-    public boolean qualifiesForCertificate() {
-        return isCompleted() && team != null && !team.memberParticipants().isEmpty();
-    }
-
-    @Override
-    public List<Participant> getCertificateRecipients() {
-        if (!qualifiesForCertificate()) {
-            return List.of();
+    public int progressPercent() {
+        if (milestones.isEmpty()) {
+            return 0;
         }
-        return team.memberParticipants().stream().toList();
+        long done = milestones.stream().filter(m -> m.getStatus() == MilestoneStatus.DONE).count();
+        return (int) Math.round((done * 100.0) / milestones.size());
     }
 
-    // ---------------------------------------------------------------------
-    // Accessors
-    // ---------------------------------------------------------------------
-
-    public String getTitle() {
-        return title;
+    public boolean hasOverdueMilestone(LocalDate today) {
+        return milestones.stream().anyMatch(m -> m.isOverdue(today));
     }
 
-    public void setTitle(String title) {
-        this.title = title;
+    public void addMilestone(Milestone milestone) {
+        milestones.add(milestone);
     }
 
-    public String getProblemStatement() {
-        return problemStatement;
+    public Long getProjectId() {
+        return projectId;
     }
 
-    public void setProblemStatement(String problemStatement) {
-        this.problemStatement = problemStatement;
-    }
-
-    public String getProposedSolution() {
-        return proposedSolution;
-    }
-
-    public void setProposedSolution(String proposedSolution) {
-        this.proposedSolution = proposedSolution;
+    public void setProjectId(Long projectId) {
+        this.projectId = projectId;
     }
 
     public Team getTeam() {
@@ -171,6 +154,30 @@ public class ImpactProject extends BaseEntity implements Certifiable {
         this.team = team;
     }
 
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public ChallengeArea getChallengeArea() {
+        return challengeArea;
+    }
+
+    public void setChallengeArea(ChallengeArea challengeArea) {
+        this.challengeArea = challengeArea;
+    }
+
     public ProjectStatus getStatus() {
         return status;
     }
@@ -179,51 +186,43 @@ public class ImpactProject extends BaseEntity implements Certifiable {
         this.status = status;
     }
 
-    public OffsetDateTime getSubmissionDate() {
-        return submissionDate;
+    public boolean isAiUsed() {
+        return aiUsed;
     }
 
-    public void setSubmissionDate(OffsetDateTime submissionDate) {
-        this.submissionDate = submissionDate;
+    public void setAiUsed(boolean aiUsed) {
+        this.aiUsed = aiUsed;
     }
 
-    public boolean isAiAssisted() {
-        return aiAssisted;
+    public String getAiUsageDeclaration() {
+        return aiUsageDeclaration;
     }
 
-    public void setAiAssisted(boolean aiAssisted) {
-        this.aiAssisted = aiAssisted;
+    public void setAiUsageDeclaration(String aiUsageDeclaration) {
+        this.aiUsageDeclaration = aiUsageDeclaration;
     }
 
-    public String getAiUsageNote() {
-        return aiUsageNote;
+    public OffsetDateTime getSubmittedAt() {
+        return submittedAt;
     }
 
-    public void setAiUsageNote(String aiUsageNote) {
-        this.aiUsageNote = aiUsageNote;
+    public void setSubmittedAt(OffsetDateTime submittedAt) {
+        this.submittedAt = submittedAt;
     }
 
-    public String getReviewFeedback() {
-        return reviewFeedback;
+    public boolean isOpenForSupport() {
+        return openForSupport;
     }
 
-    public void setReviewFeedback(String reviewFeedback) {
-        this.reviewFeedback = reviewFeedback;
+    public void setOpenForSupport(boolean openForSupport) {
+        this.openForSupport = openForSupport;
     }
 
-    public Long getReviewedById() {
-        return reviewedById;
+    public List<Milestone> getMilestones() {
+        return milestones;
     }
 
-    public void setReviewedById(Long reviewedById) {
-        this.reviewedById = reviewedById;
-    }
-
-    public OffsetDateTime getReviewedAt() {
-        return reviewedAt;
-    }
-
-    public void setReviewedAt(OffsetDateTime reviewedAt) {
-        this.reviewedAt = reviewedAt;
+    public void setMilestones(List<Milestone> milestones) {
+        this.milestones = milestones;
     }
 }

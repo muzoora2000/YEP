@@ -1,8 +1,7 @@
 package com.yep.domain.enums;
 
-/** Lifecycle of a user account (privacy / moderation requirement). */
 public enum AccountStatus {
+    PENDING,
     ACTIVE,
-    SUSPENDED,
-    DEACTIVATED
+    SUSPENDED
 }

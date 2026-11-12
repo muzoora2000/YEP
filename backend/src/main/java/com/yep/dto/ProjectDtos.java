@@ -1,77 +1,133 @@
 package com.yep.dto;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.List;
 
+import com.yep.domain.enums.ChallengeArea;
+import com.yep.domain.enums.MilestoneStatus;
 import com.yep.domain.enums.ProjectStatus;
-import com.yep.domain.project.ImpactProject;
+import com.yep.domain.enums.ReviewDecision;
+import com.yep.domain.enums.TeamMemberRole;
+import com.yep.domain.enums.TeamStatus;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-/** Contracts for {@code /api/v1/projects}. */
 public final class ProjectDtos {
 
     private ProjectDtos() {
     }
 
+    public record TeamRequest(
+            @NotNull Long activityId,
+            @NotBlank @Size(max = 120) String teamName,
+            Long mentorId) {
+    }
+
+    public record AddTeamMemberRequest(Long youthId) {
+    }
+
+    public record MentorAssignmentRequest(@NotNull Long mentorId) {
+    }
+
+    public record TeamMemberResponse(
+            Long memberId,
+            Long youthId,
+            String name,
+            String email,
+            TeamMemberRole role) {
+    }
+
+    public record TeamResponse(
+            Long teamId,
+            Long activityId,
+            String activityTitle,
+            String teamName,
+            Long mentorId,
+            String mentorName,
+            Long createdById,
+            String createdByName,
+            TeamStatus status,
+            int memberCount,
+            int minTeamSize,
+            int maxTeamSize,
+            List<TeamMemberResponse> members,
+            Long projectId,
+            String projectTitle) {
+    }
+
     public record ProjectRequest(
-            @NotBlank(message = "title is required")
-            @Size(max = 180)
+            @NotNull Long teamId,
+            @NotBlank @Size(max = 190) String title,
+            @Size(max = 6000) String description,
+            @NotNull ChallengeArea challengeArea,
+            Boolean aiUsed,
+            @Size(max = 2000) String aiUsageDeclaration) {
+    }
+
+    public record ProjectUpdateRequest(
+            @Size(max = 190) String title,
+            @Size(max = 6000) String description,
+            ChallengeArea challengeArea,
+            Boolean aiUsed,
+            @Size(max = 2000) String aiUsageDeclaration) {
+    }
+
+    public record MilestoneRequest(
+            @NotBlank @Size(max = 190) String title,
+            LocalDate dueDate) {
+    }
+
+    public record MilestoneStatusRequest(@NotNull MilestoneStatus status) {
+    }
+
+    public record MilestoneResponse(
+            Long milestoneId,
+            Long projectId,
             String title,
+            LocalDate dueDate,
+            MilestoneStatus status,
+            OffsetDateTime completedAt,
+            boolean overdue) {
+    }
 
-            @Size(max = 4000)
-            String problemStatement,
+    public record ReviewRequest(
+            @NotNull ReviewDecision decision,
+            @NotBlank @Size(max = 4000) String feedback) {
+    }
 
-            @Size(max = 4000)
-            String proposedSolution,
-
-            Boolean aiAssisted,
-
-            @Size(max = 2000)
-            String aiUsageNote) {
+    public record ReviewResponse(
+            Long reviewId,
+            Long projectId,
+            Long mentorId,
+            String mentorName,
+            ReviewDecision decision,
+            String feedback,
+            OffsetDateTime createdAt) {
     }
 
     public record ProjectResponse(
-            Long id,
-            String title,
-            String problemStatement,
-            String proposedSolution,
+            Long projectId,
             Long teamId,
             String teamName,
-            Long levelTwoExchangeId,
-            String focusArea,
+            Long activityId,
+            String activityTitle,
+            String title,
+            String description,
+            ChallengeArea challengeArea,
             ProjectStatus status,
-            OffsetDateTime submissionDate,
-            boolean aiAssisted,
-            String aiUsageNote,
-            String reviewFeedback,
-            OffsetDateTime reviewedAt) {
-
-        public static ProjectResponse of(ImpactProject project) {
-            return new ProjectResponse(
-                    project.getId(),
-                    project.getTitle(),
-                    project.getProblemStatement(),
-                    project.getProposedSolution(),
-                    project.getTeam() != null ? project.getTeam().getId() : null,
-                    project.getTeam() != null ? project.getTeam().getName() : null,
-                    project.getTeam() != null && project.getTeam().getLevelTwoExchange() != null
-                            ? project.getTeam().getLevelTwoExchange().getId() : null,
-                    project.getTeam() != null && project.getTeam().getLevelTwoExchange() != null
-                            ? project.getTeam().getLevelTwoExchange().getFocusArea().name() : null,
-                    project.getStatus(),
-                    project.getSubmissionDate(),
-                    project.isAiAssisted(),
-                    project.getAiUsageNote(),
-                    project.getReviewFeedback(),
-                    project.getReviewedAt());
-        }
+            boolean aiUsed,
+            String aiUsageDeclaration,
+            OffsetDateTime submittedAt,
+            boolean openForSupport,
+            int progressPercent,
+            boolean overdue,
+            List<MilestoneResponse> milestones,
+            List<ReviewResponse> reviews) {
     }
 
-    public record ProjectReviewRequest(
-            @NotBlank
-            String decision,
-            @Size(max = 4000)
-            String feedback) {
+    public record SupportVisibilityRequest(boolean openForSupport) {
     }
 }

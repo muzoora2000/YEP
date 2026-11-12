@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
+import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,35 +12,37 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.yep.domain.assessment.Assessment;
-import com.yep.domain.certificate.Certificate;
-import com.yep.domain.enums.AssessmentTargetType;
-import com.yep.domain.enums.LevelOneTopic;
-import com.yep.domain.enums.LevelTwoFocusArea;
-import com.yep.domain.enums.Role;
-import com.yep.domain.exchange.LevelOneExchange;
-import com.yep.domain.exchange.LevelTwoExchange;
-import com.yep.domain.exchange.VirtualExchange;
+import com.yep.domain.activity.LevelOneActivity;
+import com.yep.domain.activity.LevelTwoActivity;
+import com.yep.domain.activity.LearningActivity;
+import com.yep.domain.enums.ActivityLevel;
+import com.yep.domain.enums.ChallengeArea;
+import com.yep.domain.enums.MilestoneStatus;
+import com.yep.domain.enums.TaskType;
+import com.yep.domain.enums.TeamMemberRole;
+import com.yep.domain.learning.AssessmentTask;
+import com.yep.domain.learning.DiscussionPost;
+import com.yep.domain.learning.DiscussionThread;
+import com.yep.domain.learning.Enrollment;
 import com.yep.domain.project.ImpactProject;
-import com.yep.domain.team.Team;
-import com.yep.domain.team.TeamMember;
-import com.yep.domain.user.Admin;
+import com.yep.domain.project.Milestone;
+import com.yep.domain.project.Team;
 import com.yep.domain.user.Facilitator;
-import com.yep.domain.user.Mentor;
-import com.yep.domain.user.Participant;
 import com.yep.domain.user.User;
-import com.yep.repository.AssessmentRepository;
-import com.yep.repository.CertificateRepository;
-import com.yep.repository.TeamMemberRepository;
+import com.yep.domain.user.YouthParticipant;
+import com.yep.repository.AssessmentTaskRepository;
+import com.yep.repository.DiscussionPostRepository;
+import com.yep.repository.DiscussionThreadRepository;
+import com.yep.repository.EnrollmentRepository;
+import com.yep.repository.ImpactProjectRepository;
+import com.yep.repository.LearningActivityRepository;
+import com.yep.repository.MilestoneRepository;
 import com.yep.repository.TeamRepository;
 import com.yep.repository.UserRepository;
-import com.yep.repository.VirtualExchangeRepository;
 
 /**
- * Boots the whole application against the real Flyway migrations with
- * {@code ddl-auto=validate}. If the SQL schema and the JPA entities ever drift
- * apart, this test fails at context start-up - which is exactly what would
- * happen on Render.
+ * Boots the application with the real Flyway migrations and ddl-auto=validate.
+ * Any mismatch between SQL and the JPA inheritance model fails this test.
  */
 @SpringBootTest
 @ActiveProfiles("test")
@@ -51,193 +53,179 @@ class SchemaValidationTest {
     private UserRepository userRepository;
 
     @Autowired
-    private VirtualExchangeRepository exchangeRepository;
+    private LearningActivityRepository activityRepository;
+
+    @Autowired
+    private EnrollmentRepository enrollmentRepository;
 
     @Autowired
     private TeamRepository teamRepository;
 
     @Autowired
-    private TeamMemberRepository teamMemberRepository;
+    private ImpactProjectRepository projectRepository;
 
     @Autowired
-    private AssessmentRepository assessmentRepository;
+    private MilestoneRepository milestoneRepository;
 
     @Autowired
-    private CertificateRepository certificateRepository;
+    private DiscussionThreadRepository threadRepository;
+
+    @Autowired
+    private DiscussionPostRepository postRepository;
+
+    @Autowired
+    private AssessmentTaskRepository taskRepository;
 
     @Test
     void flywaySchemaMatchesJpaEntities() {
-        // Reaching this assertion means Hibernate validated every table and column.
         assertThat(userRepository).isNotNull();
-        assertThat(exchangeRepository).isNotNull();
+        assertThat(activityRepository).isNotNull();
     }
 
     @Test
-    void singleTableUserInheritanceKeepsTheRoleDiscriminator() {
-        Participant participant = new Participant();
-        participant.setRole(Role.PARTICIPANT);
-        participant.setFullName("Schema Tester");
-        participant.setEmail("schema-participant@yep.test");
-        participant.setPasswordHash("{bcrypt}$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinva");
-        participant.setConsentGiven(true);
-        participant.setAge(25);
-        userRepository.save(participant);
+    void joinedInheritanceStoresEveryProfileInItsOwnTable() {
+        YouthParticipant participant = participant("schema-participant");
+        Facilitator facilitator = facilitator("schema-facilitator");
+        userRepository.saveAndFlush(participant);
+        userRepository.saveAndFlush(facilitator);
 
+        User reloaded = userRepository.findByEmailIgnoreCase(participant.getEmail()).orElseThrow();
+        assertThat(reloaded).isInstanceOf(YouthParticipant.class);
+        assertThat(reloaded.getRole()).isEqualTo(com.yep.domain.enums.Role.PARTICIPANT);
+        assertThat(((YouthParticipant) reloaded).getAge()).isEqualTo(24);
+    }
+
+    @Test
+    void singleTableActivityInheritanceIsPolymorphic() {
+        Facilitator facilitator = facilitator("activity-owner");
+        userRepository.saveAndFlush(facilitator);
+
+        LevelOneActivity one = new LevelOneActivity();
+        one.setFacilitator(facilitator);
+        one.setTitle("AI literacy");
+        one.setStartDate(LocalDate.now().plusDays(2));
+        activityRepository.save(one);
+
+        LevelTwoActivity two = new LevelTwoActivity();
+        two.setFacilitator(facilitator);
+        two.setTitle("Digital inclusion projects");
+        two.setStartDate(LocalDate.now().plusDays(3));
+        activityRepository.save(two);
+
+        List<LearningActivity> all = activityRepository.findAll();
+        assertThat(all).anyMatch(LevelOneActivity.class::isInstance);
+        assertThat(all).anyMatch(LevelTwoActivity.class::isInstance);
+        assertThat(all).allSatisfy(activity -> {
+            assertThat(activity.getLevelFeatures()).isNotEmpty();
+            if (activity.getLevel() == ActivityLevel.ONE) {
+                assertThat(activity.supportsTeamFormation()).isFalse();
+            } else {
+                assertThat(activity.supportsTeamFormation()).isTrue();
+            }
+        });
+    }
+
+    @Test
+    void enrollmentStatusOnlyChangesThroughDomainMethods() {
+        YouthParticipant participant = participant("enrollment-youth");
+        Facilitator facilitator = facilitator("enrollment-facilitator");
+        userRepository.saveAndFlush(participant);
+        userRepository.saveAndFlush(facilitator);
+
+        LevelOneActivity activity = new LevelOneActivity();
+        activity.setFacilitator(facilitator);
+        activity.setTitle("Media literacy");
+        activity.setStartDate(LocalDate.now().plusDays(1));
+        activityRepository.saveAndFlush(activity);
+
+        Enrollment enrollment = participant.enrollActivity(activity);
+        enrollmentRepository.saveAndFlush(enrollment);
+
+        assertThat(enrollment.getStatus()).isEqualTo(com.yep.domain.enums.EnrollmentStatus.ENROLLED);
+        enrollment.cancelEnrollment();
+        assertThat(enrollment.getStatus()).isEqualTo(com.yep.domain.enums.EnrollmentStatus.CANCELLED);
+    }
+
+    @Test
+    void teamProjectAndCompositionRelationshipsPersist() {
+        Facilitator facilitator = facilitator("project-facilitator");
+        userRepository.saveAndFlush(facilitator);
+        YouthParticipant leader = participant("project-leader");
+        userRepository.saveAndFlush(leader);
+
+        LevelTwoActivity activity = new LevelTwoActivity();
+        activity.setFacilitator(facilitator);
+        activity.setTitle("Climate teams");
+        activity.setStartDate(LocalDate.now());
+        activityRepository.saveAndFlush(activity);
+
+        Team team = new Team(activity, "Green Squad", leader);
+        team.addMember(leader, TeamMemberRole.LEADER);
+        team = teamRepository.saveAndFlush(team);
+
+        ImpactProject project = new ImpactProject(team, "Solar dryers");
+        project.setChallengeArea(ChallengeArea.CLIMATE_CHANGE);
+        project.setDescription("A community solar drying project");
+        project.addMilestone(new Milestone(project, "Research", LocalDate.now().plusDays(10)));
+        project.addMilestone(new Milestone(project, "Prototype", LocalDate.now().plusDays(20)));
+        project = projectRepository.saveAndFlush(project);
+
+        assertThat(team.memberCount()).isEqualTo(1);
+        assertThat(project.progressPercent()).isZero();
+        Milestone first = project.getMilestones().get(0);
+        first.updateMilestone(MilestoneStatus.DONE);
+        milestoneRepository.saveAndFlush(first);
+        assertThat(project.progressPercent()).isEqualTo(50);
+    }
+
+    @Test
+    void discussionAndAssessmentJsonColumnsPersist() {
+        Facilitator facilitator = facilitator("json-facilitator");
+        userRepository.saveAndFlush(facilitator);
+
+        LevelOneActivity activity = new LevelOneActivity();
+        activity.setFacilitator(facilitator);
+        activity.setTitle("Critical thinking");
+        activity.setStartDate(LocalDate.now());
+        activityRepository.saveAndFlush(activity);
+
+        DiscussionThread thread = new DiscussionThread(activity, "General");
+        thread = threadRepository.saveAndFlush(thread);
+        DiscussionPost post = new DiscussionPost(thread, facilitator, "Welcome to the exchange");
+        postRepository.saveAndFlush(post);
+
+        AssessmentTask task = new AssessmentTask(activity, "Quiz one", TaskType.QUIZ);
+        task.setQuestions(List.of(java.util.Map.of(
+                "text", "What is misinformation?",
+                "options", List.of("A", "B"),
+                "correctIndex", 0)));
+        taskRepository.saveAndFlush(task);
+
+        assertThat(threadRepository.findByActivityActivityId(activity.getActivityId())).isNotEmpty();
+        assertThat(postRepository.findByThreadThreadIdOrderByPostedAtAsc(thread.getThreadId())).hasSize(1);
+        assertThat(taskRepository.findByActivityActivityIdAndPublishedTrueOrderByDueDateAsc(activity.getActivityId()))
+                .hasSize(1);
+    }
+
+    private YouthParticipant participant(String prefix) {
+        YouthParticipant participant = new YouthParticipant();
+        participant.setName("Schema Participant");
+        participant.setEmail(prefix + "-" + UUID.randomUUID() + "@yep.test");
+        participant.setPassword("$2a$10$01234567890123456789012345678901234567890123456789012");
+        participant.setAge(24);
+        participant.setCountry("Uganda");
+        participant.setDigitalSkills("INTERMEDIATE");
+        participant.register();
+        return participant;
+    }
+
+    private Facilitator facilitator(String prefix) {
         Facilitator facilitator = new Facilitator();
-        facilitator.setRole(Role.FACILITATOR);
-        facilitator.setFullName("Schema Facilitator");
-        facilitator.setEmail("schema-facilitator@yep.test");
-        facilitator.setPasswordHash("{bcrypt}$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinva");
-        facilitator.setConsentGiven(true);
-        facilitator.setExpertiseArea("AI literacy");
-        userRepository.save(facilitator);
-
-        Mentor mentor = new Mentor();
-        mentor.setRole(Role.MENTOR);
-        mentor.setFullName("Schema Mentor");
-        mentor.setEmail("schema-mentor@yep.test");
-        mentor.setPasswordHash("{bcrypt}$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinva");
-        mentor.setConsentGiven(true);
-        mentor.setMentorshipAreas("HEALTH,CLIMATE");
-        userRepository.save(mentor);
-
-        Admin admin = new Admin();
-        admin.setRole(Role.ADMIN);
-        admin.setFullName("Schema Admin");
-        admin.setEmail("schema-admin@yep.test");
-        admin.setPasswordHash("{bcrypt}$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinva");
-        admin.setConsentGiven(true);
-        userRepository.save(admin);
-
-        // Polymorphic read: one query, four concrete types.
-        List<User> all = userRepository.findAll();
-        assertThat(all).isNotEmpty();
-        assertThat(all.stream().filter(Participant.class::isInstance)).isNotEmpty();
-        assertThat(all.stream().filter(Admin.class::isInstance)).isNotEmpty();
-
-        // The mapped discriminator column really holds the role.
-        Optional<User> loaded = userRepository.findByEmail("schema-facilitator@yep.test");
-        assertThat(loaded).isPresent();
-        assertThat(loaded.get().getRole()).isEqualTo(Role.FACILITATOR);
-        assertThat(loaded.get()).isInstanceOf(Facilitator.class);
-
-        // ... and role based queries work.
-        assertThat(userRepository.findByRole(Role.ADMIN)).isNotEmpty();
-    }
-
-    @Test
-    void nativeSearchHydratesBothExchangeLevels() {
-        LevelOneExchange levelOne = new LevelOneExchange();
-        levelOne.setTitle("Searchable Level One session");
-        levelOne.setDescription("Polymorphic hydration check");
-        levelOne.setTopic(LevelOneTopic.AI_LITERACY);
-        levelOne.setStartDate(LocalDate.now().plusDays(3));
-        exchangeRepository.save(levelOne);
-
-        LevelTwoExchange levelTwo = new LevelTwoExchange();
-        levelTwo.setTitle("Searchable Level Two programme");
-        levelTwo.setDescription("Polymorphic hydration check");
-        levelTwo.setFocusArea(LevelTwoFocusArea.CLIMATE);
-        levelTwo.setStartDate(LocalDate.now().plusDays(4));
-        exchangeRepository.save(levelTwo);
-
-        List<VirtualExchange> results = exchangeRepository.findAllById(exchangeRepository
-                .searchIds(null, null, null, null, "Polymorphic hydration", null, null,
-                        org.springframework.data.domain.PageRequest.of(0, 20))
-                .getContent());
-
-        assertThat(results).hasSizeGreaterThanOrEqualTo(2);
-        assertThat(results).allSatisfy(result -> assertThat(result).isInstanceOf(VirtualExchange.class));
-        assertThat(results).anyMatch(LevelOneExchange.class::isInstance);
-        assertThat(results).anyMatch(LevelTwoExchange.class::isInstance);
-
-        // Level filtered search uses the discriminator column.
-        List<VirtualExchange> levelOnes = exchangeRepository.findAllById(exchangeRepository
-                .searchIds("LEVEL_ONE", "AI_LITERACY", null, null, null, null, null,
-                        org.springframework.data.domain.PageRequest.of(0, 20))
-                .getContent());
-        assertThat(levelOnes).isNotEmpty();
-        assertThat(levelOnes).allMatch(LevelOneExchange.class::isInstance);
-    }
-
-    @Test
-    void assessmentBindsThePolymorphicTargetToOneForeignKey() {
-        Participant target = new Participant();
-        target.setRole(Role.PARTICIPANT);
-        target.setFullName("Assessed Participant");
-        target.setEmail("assessed@yep.test");
-        target.setPasswordHash("{bcrypt}$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinva");
-        target.setConsentGiven(true);
-        userRepository.save(target);
-
-        Facilitator assessor = new Facilitator();
-        assessor.setRole(Role.FACILITATOR);
-        assessor.setFullName("Assessing Facilitator");
-        assessor.setEmail("assessor@yep.test");
-        assessor.setPasswordHash("{bcrypt}$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinva");
-        assessor.setConsentGiven(true);
-        userRepository.save(assessor);
-
-        Assessment assessment = Assessment.of(target, assessor, "Participation", 91, "Great contribution");
-        assessmentRepository.save(assessment);
-
-        Assessment reloaded = assessmentRepository.findById(assessment.getId()).orElseThrow();
-        assertThat(reloaded.getTargetType()).isEqualTo(AssessmentTargetType.PARTICIPANT);
-        assertThat(reloaded.getParticipantTarget()).isNotNull();
-        assertThat(reloaded.getTeamTarget()).isNull();
-        assertThat(reloaded.resolveTarget()).isSameAs(reloaded.getParticipantTarget());
-        assertThat(reloaded.getAssessor().getId()).isEqualTo(assessor.getId());
-    }
-
-    @Test
-    void certificatesStoreAndVerifyThroughTheirPublicCode() {
-        Participant holder = new Participant();
-        holder.setRole(Role.PARTICIPANT);
-        holder.setFullName("Certificate Holder");
-        holder.setEmail("holder@yep.test");
-        holder.setPasswordHash("{bcrypt}$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinva");
-        holder.setConsentGiven(true);
-        userRepository.save(holder);
-
-        Certificate certificate = Certificate.issuedTo(holder, "Certificate of Participation - Certificate Holder",
-                "Digital Literacy Bootcamp", "YEP-VERIFY-ME-123");
-        certificateRepository.save(certificate);
-
-        assertThat(certificateRepository.existsByVerificationCode("YEP-VERIFY-ME-123")).isTrue();
-        assertThat(certificateRepository.findByVerificationCode("YEP-VERIFY-ME-123")).isPresent();
-        assertThat(certificateRepository.existsForRecipientAndReference(holder.getId(),
-                "Digital Literacy Bootcamp")).isTrue();
-    }
-
-    @Test
-    void teamMembershipIsPersistedThroughItsJoinEntity() {
-        LevelTwoExchange exchange = new LevelTwoExchange();
-        exchange.setTitle("Team schema check");
-        exchange.setFocusArea(LevelTwoFocusArea.EDUCATION);
-        exchange.setStartDate(LocalDate.now().plusDays(1));
-        exchangeRepository.save(exchange);
-
-        Participant member = new Participant();
-        member.setRole(Role.PARTICIPANT);
-        member.setFullName("Team Member");
-        member.setEmail("teammate@yep.test");
-        member.setPasswordHash("{bcrypt}$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinva");
-        member.setConsentGiven(true);
-        userRepository.save(member);
-
-        Team team = new Team();
-        team.setName("Schema Squad " + System.nanoTime());
-        team.setLevelTwoExchange(exchange);
-        team = teamRepository.save(team);
-        TeamMember membership = team.addMember(member, com.yep.domain.enums.TeamMemberRole.LEAD);
-        teamMemberRepository.save(membership);
-        team = teamRepository.save(team);
-
-        Team reloaded = teamRepository.findById(team.getId()).orElseThrow();
-        assertThat(reloaded.memberCount()).isEqualTo(1);
-        assertThat(reloaded.isMember(member)).isTrue();
-
-        ImpactProject project = ImpactProject.draftFor(reloaded, "Schema squad project");
-        assertThat(project.getCertificateRecipients()).isEmpty(); // project not completed yet
+        facilitator.setName("Schema Facilitator");
+        facilitator.setEmail(prefix + "-" + UUID.randomUUID() + "@yep.test");
+        facilitator.setPassword("$2a$10$01234567890123456789012345678901234567890123456789012");
+        facilitator.setSpecialisation("Digital literacy");
+        facilitator.register();
+        return facilitator;
     }
 }

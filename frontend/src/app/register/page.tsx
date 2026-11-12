@@ -11,12 +11,21 @@ import { useAuth } from '@/lib/auth';
 import { registerSchema, type RegisterValues } from '@/lib/schemas';
 import { Alert } from '@/components/ui/Feedback';
 import { Button } from '@/components/ui/Button';
-import { Checkbox, Field, Input, PasswordInput, Select, Textarea } from '@/components/ui/Form';
+import { Field, Input, PasswordInput, Select, Textarea } from '@/components/ui/Form';
 
 const roleOptions = [
   { value: 'PARTICIPANT', label: 'Participant - join exchanges and teams' },
   { value: 'FACILITATOR', label: 'Facilitator - run sessions and assess' },
   { value: 'MENTOR', label: 'Mentor - guide teams' },
+  { value: 'PARTNER', label: 'Partner organisation - opportunities and support' },
+] as const;
+
+const organisationTypes = [
+  { value: 'NGO', label: 'NGO' },
+  { value: 'UNIVERSITY', label: 'University' },
+  { value: 'EMPLOYER', label: 'Employer' },
+  { value: 'DEVELOPMENT_AGENCY', label: 'Development agency' },
+  { value: 'TECH_COMPANY', label: 'Tech company' },
 ] as const;
 
 export default function RegisterPage() {
@@ -34,9 +43,9 @@ export default function RegisterPage() {
     resolver: zodResolver(registerSchema),
     defaultValues: {
       role: 'PARTICIPANT',
-      skillLevel: 'BEGINNER',
       country: '',
       phone: '',
+      shareProfileWithPartners: true,
     },
   });
 
@@ -47,18 +56,25 @@ export default function RegisterPage() {
     setFieldErrors({});
     try {
       await signUp({
-        fullName: values.fullName,
+        name: values.name,
         email: values.email,
         password: values.password,
+        role: values.role,
         country: values.country || undefined,
         phone: values.phone || undefined,
-        role: values.role,
-        consentGiven: values.consentGiven,
         age: values.role === 'PARTICIPANT' ? values.age : undefined,
-        skillLevel: values.role === 'PARTICIPANT' ? values.skillLevel : undefined,
-        expertiseArea: values.role === 'FACILITATOR' ? values.expertiseArea : undefined,
-        expertiseTopics: values.role === 'FACILITATOR' ? values.expertiseTopics : undefined,
-        mentorshipAreas: values.role === 'MENTOR' ? values.mentorshipAreas : undefined,
+        digitalSkills: values.role === 'PARTICIPANT' ? values.digitalSkills : undefined,
+        institution: values.role === 'PARTICIPANT' ? values.institution : undefined,
+        bio: values.bio || undefined,
+        shareProfileWithPartners: values.shareProfileWithPartners,
+        specialisation: values.role === 'FACILITATOR' ? values.specialisation : undefined,
+        organisation: values.role === 'FACILITATOR' ? values.organisation : undefined,
+        expertise: values.role === 'MENTOR' ? values.expertise : undefined,
+        department: values.role === 'MENTOR' ? values.department : undefined,
+        organisationName: values.role === 'PARTNER' ? values.organisationName : undefined,
+        organisationType: values.role === 'PARTNER' ? values.organisationType : undefined,
+        website: values.role === 'PARTNER' ? values.website : undefined,
+        description: values.role === 'PARTNER' ? values.description : undefined,
       });
       router.push('/dashboard');
     } catch (error) {
@@ -76,7 +92,8 @@ export default function RegisterPage() {
       <div className="mb-6 text-center">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Create your YEP account</h1>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-          Only the details needed to run the programme are collected, and only with your consent.
+          Only the details needed to run the programme are collected. Participants are active immediately;
+          staff and partner accounts are reviewed by an administrator.
         </p>
       </div>
 
@@ -98,26 +115,16 @@ export default function RegisterPage() {
         </Field>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Full name" htmlFor="fullName" error={errors.fullName?.message} required>
-            <Input id="fullName" autoComplete="name" invalid={!!errors.fullName} {...register('fullName')} />
+          <Field label="Full name" htmlFor="name" error={errors.name?.message ?? fieldErrors.name} required>
+            <Input id="name" autoComplete="name" invalid={!!errors.name} {...register('name')} />
           </Field>
 
-          <Field
-            label="Email"
-            htmlFor="email"
-            error={errors.email?.message ?? fieldErrors.email}
-            required
-          >
+          <Field label="Email" htmlFor="email" error={errors.email?.message ?? fieldErrors.email} required>
             <Input id="email" type="email" autoComplete="email" invalid={!!errors.email} {...register('email')} />
           </Field>
 
-          <Field label="Password" htmlFor="password" error={errors.password?.message} required>
-            <PasswordInput
-              id="password"
-              autoComplete="new-password"
-              invalid={!!errors.password}
-              {...register('password')}
-            />
+          <Field label="Password" htmlFor="password" error={errors.password?.message} required hint="At least 8 characters with a letter and a number">
+            <PasswordInput id="password" autoComplete="new-password" invalid={!!errors.password} {...register('password')} />
           </Field>
 
           <Field label="Confirm password" htmlFor="confirmPassword" error={errors.confirmPassword?.message} required>
@@ -129,7 +136,7 @@ export default function RegisterPage() {
             />
           </Field>
 
-          <Field label="Country" htmlFor="country">
+          <Field label="Country" htmlFor="country" error={errors.country?.message ?? fieldErrors.country}>
             <Input id="country" autoComplete="country-name" placeholder="Uganda" {...register('country')} />
           </Field>
 
@@ -139,67 +146,79 @@ export default function RegisterPage() {
         </div>
 
         {role === 'PARTICIPANT' && (
-          <div className="grid gap-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 p-4 sm:grid-cols-2">
-            <Field label="Age" htmlFor="age" error={errors.age?.message} required hint="Participants must be 16-40">
-              <Input
-                id="age"
-                type="number"
-                min={16}
-                max={40}
-                inputMode="numeric"
-                invalid={!!errors.age}
-                {...register('age')}
-              />
+          <div className="grid gap-4 rounded-xl bg-slate-50 p-4 sm:grid-cols-2 dark:bg-slate-800/60">
+            <Field label="Age" htmlFor="age" error={errors.age?.message ?? fieldErrors.age} required hint="Participants must be 18-35">
+              <Input id="age" type="number" min={18} max={35} inputMode="numeric" invalid={!!errors.age} {...register('age')} />
             </Field>
-            <Field label="Experience level" htmlFor="skillLevel">
-              <Select id="skillLevel" {...register('skillLevel')}>
-                <option value="BEGINNER">Beginner</option>
-                <option value="INTERMEDIATE">Intermediate</option>
-                <option value="ADVANCED">Advanced</option>
-              </Select>
+            <Field label="Digital skills" htmlFor="digitalSkills">
+              <Input id="digitalSkills" placeholder="Beginner, intermediate…" {...register('digitalSkills')} />
+            </Field>
+            <Field label="Institution (optional)" htmlFor="institution" className="sm:col-span-2">
+              <Input id="institution" placeholder="School, college or employer" {...register('institution')} />
             </Field>
           </div>
         )}
 
         {role === 'FACILITATOR' && (
-          <div className="grid gap-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 p-4 sm:grid-cols-2">
-            <Field label="Area of expertise" htmlFor="expertiseArea" error={errors.expertiseArea?.message}>
-              <Input id="expertiseArea" placeholder="Digital literacy" invalid={!!errors.expertiseArea} {...register('expertiseArea')} />
+          <div className="grid gap-4 rounded-xl bg-slate-50 p-4 sm:grid-cols-2 dark:bg-slate-800/60">
+            <Field label="Specialisation" htmlFor="specialisation">
+              <Input id="specialisation" placeholder="Digital literacy" {...register('specialisation')} />
             </Field>
-            <Field label="Topics" htmlFor="expertiseTopics" error={errors.expertiseTopics?.message}>
-              <Textarea
-                id="expertiseTopics"
-                placeholder="AI, media literacy, intercultural communication"
-                className="min-h-[80px]"
-                {...register('expertiseTopics')}
-              />
+            <Field label="Organisation" htmlFor="organisation">
+              <Input id="organisation" placeholder="YEP partner" {...register('organisation')} />
             </Field>
           </div>
         )}
 
         {role === 'MENTOR' && (
-          <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 p-4">
-            <Field
-              label="Mentorship areas"
-              htmlFor="mentorshipAreas"
-              error={errors.mentorshipAreas?.message}
-              hint="Comma separated, e.g. HEALTH, CLIMATE"
-            >
-              <Textarea
-                id="mentorshipAreas"
-                className="min-h-[80px]"
-                invalid={!!errors.mentorshipAreas}
-                {...register('mentorshipAreas')}
-              />
+          <div className="grid gap-4 rounded-xl bg-slate-50 p-4 sm:grid-cols-2 dark:bg-slate-800/60">
+            <Field label="Expertise" htmlFor="expertise">
+              <Textarea id="expertise" placeholder="Climate, health, education…" className="min-h-[80px]" {...register('expertise')} />
+            </Field>
+            <Field label="Department" htmlFor="department">
+              <Input id="department" placeholder="Programmes" {...register('department')} />
             </Field>
           </div>
         )}
 
-        <Checkbox
-          label="I consent to YEP storing the details above for running virtual exchanges, assessments and certificates. Data is never sold or shared with advertisers."
-          error={errors.consentGiven?.message ?? fieldErrors.consentGiven}
-          {...register('consentGiven')}
-        />
+        {role === 'PARTNER' && (
+          <div className="grid gap-4 rounded-xl bg-slate-50 p-4 sm:grid-cols-2 dark:bg-slate-800/60">
+            <Field label="Organisation name" htmlFor="organisationName" error={errors.organisationName?.message ?? fieldErrors.organisationName} required>
+              <Input id="organisationName" invalid={!!errors.organisationName} {...register('organisationName')} />
+            </Field>
+            <Field label="Organisation type" htmlFor="organisationType">
+              <Select id="organisationType" {...register('organisationType')}>
+                {organisationTypes.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Website" htmlFor="website" className="sm:col-span-2">
+              <Input id="website" type="url" placeholder="https://…" {...register('website')} />
+            </Field>
+            <Field label="What your organisation does" htmlFor="description" className="sm:col-span-2">
+              <Textarea id="description" {...register('description')} />
+            </Field>
+          </div>
+        )}
+
+        <Field label="Short bio (optional)" htmlFor="bio">
+          <Textarea id="bio" placeholder="Tell us a little about yourself" {...register('bio')} />
+        </Field>
+
+        <label className="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-300">
+          <input
+            type="checkbox"
+            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-600 dark:border-slate-600 dark:bg-slate-800"
+            {...register('shareProfileWithPartners')}
+          />
+          <span>
+            I agree that my profile may be shared with verified partners for opportunities and support. I consent to
+            YEP storing these details to run virtual exchanges, assessments and certificates. Data is never sold.
+          </span>
+        </label>
 
         <Button type="submit" loading={isSubmitting} className="w-full">
           Create account
@@ -207,7 +226,7 @@ export default function RegisterPage() {
 
         <p className="text-center text-sm text-slate-600 dark:text-slate-300">
           Already registered?{' '}
-          <Link href="/login" className="font-semibold text-brand-700 dark:text-brand-300 hover:underline">
+          <Link href="/login" className="font-semibold text-brand-700 hover:underline dark:text-brand-300">
             Sign in
           </Link>
         </p>

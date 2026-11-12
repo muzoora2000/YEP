@@ -1,17 +1,17 @@
 'use client';
 
 import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
 
 import { RequireAuth } from '@/components/RequireAuth';
 import { LinkButton } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardDescription, CardTitle } from '@/components/ui/Card';
 import { EmptyState, ErrorState, PageHeader, SpinnerRow } from '@/components/ui/Feedback';
-import { api, withQuery } from '@/lib/api';
+import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { formatDate, titleCase } from '@/lib/format';
-import type { Certificate, Enrollment, PageResponse, Team, UnreadCount } from '@/lib/types';
-import { useQuery } from '@tanstack/react-query';
+import type { Progress, Team, UnreadCount } from '@/lib/types';
 
 function Stat({ label, value, href }: { label: string; value: string | number; href?: string }) {
   const body = (
@@ -23,7 +23,7 @@ function Stat({ label, value, href }: { label: string; value: string | number; h
   return (
     <Card className="!p-4">
       {href ? (
-        <Link href={href} className="block hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg -m-2 p-2">
+        <Link href={href} className="-m-2 block rounded-lg p-2 hover:bg-slate-50 dark:hover:bg-slate-800">
           {body}
         </Link>
       ) : (
@@ -36,60 +36,56 @@ function Stat({ label, value, href }: { label: string; value: string | number; h
 function DashboardContent() {
   const { user, isStaff } = useAuth();
 
-  const enrollments = useQuery({
-    queryKey: ['enrollments', 'mine'],
-    queryFn: () => api<Enrollment[]>('/api/v1/enrollments/mine'),
+  const progress = useQuery({
+    queryKey: ['progress', 'mine'],
+    queryFn: () => api<Progress[]>('/api/v1/progress/me'),
   });
 
   const teams = useQuery({
     queryKey: ['teams', 'mine'],
-    queryFn: () => api<Team[]>('/api/v1/teams'),
+    queryFn: () => api<Team[]>('/api/v1/teams/my'),
+    enabled: user?.role === 'PARTICIPANT',
   });
 
-  const certificates = useQuery({
-    queryKey: ['certificates', 'mine'],
-    queryFn: () => api<Certificate[]>('/api/v1/certificates/mine'),
+  const mentoredTeams = useQuery({
+    queryKey: ['teams', 'mentored'],
+    queryFn: () => api<Team[]>('/api/v1/teams/mentored'),
+    enabled: user?.role === 'MENTOR',
   });
 
   const unread = useQuery({
     queryKey: ['unread-count'],
-    queryFn: () => api<UnreadCount>('/api/v1/messages/unread-count'),
+    queryFn: () => api<UnreadCount>('/api/v1/notifications/unread-count'),
   });
 
-  const staffProjects = useQuery({
-    queryKey: ['projects', 'all'],
-    queryFn: () => api<PageResponse<unknown>>('/api/v1/projects'),
-    enabled: isStaff,
-  });
-
-  if (enrollments.isLoading || teams.isLoading) {
+  if (progress.isLoading || teams.isLoading) {
     return <SpinnerRow label="Loading your dashboard…" />;
   }
 
-  if (enrollments.isError) {
-    return <ErrorState message="Could not load your enrolments." onRetry={() => enrollments.refetch()} />;
+  if (progress.isError) {
+    return <ErrorState message="Could not load your progress." onRetry={() => progress.refetch()} />;
   }
 
-  const activeEnrolments = (enrollments.data ?? []).filter(
-    (enrollment) => enrollment.completionStatus !== 'WITHDRAWN',
-  );
+  const certificates = (progress.data ?? []).flatMap((item) => item.certificates);
+  const enrolled = (progress.data ?? []).filter((item) => item.enrollmentStatus !== 'CANCELLED');
+  const allTeams = [...(teams.data ?? []), ...(mentoredTeams.data ?? [])];
 
   return (
     <>
       <PageHeader
-        title={`WELCOME, ${user?.fullName?.split(' ')[0] ?? 'there'}`}
+        title={`Welcome, ${user?.name?.split(' ')[0] ?? 'there'}`}
         description={
           isStaff
-            ? 'Your facilitation, assessment and moderation workspace.'
-            : 'Your exchanges, teams and certificates in one place.'
+            ? 'Your facilitation, mentoring and assessment workspace.'
+            : 'Your activities, teams and certificates in one place.'
         }
         actions={
           <>
             <LinkButton href="/exchanges" size="sm">
-              Browse exchanges
+              Browse activities
             </LinkButton>
-            <LinkButton href="/messages" size="sm" variant="secondary">
-              Messages
+            <LinkButton href="/notifications" size="sm" variant="secondary">
+              Notifications
               {unread.data && unread.data.unread > 0 && (
                 <span className="rounded-full bg-rose-600 px-1.5 text-[10px] font-bold text-white">
                   {unread.data.unread}
@@ -101,41 +97,46 @@ function DashboardContent() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Enrolments" value={activeEnrolments.length} href="/exchanges" />
+        <Stat label="Enrolments" value={enrolled.length} href="/exchanges" />
         <Stat label="My teams" value={teams.data?.length ?? 0} href="/teams" />
-        <Stat label="Certificates" value={certificates.data?.length ?? 0} href="/assessments" />
-        <Stat label="Unread messages" value={unread.data?.unread ?? 0} href="/messages" />
+        <Stat label="Certificates" value={certificates.length} href="/assessments" />
+        <Stat label="Unread notifications" value={unread.data?.unread ?? 0} href="/notifications" />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <section aria-labelledby="my-exchanges">
-          <h2 id="my-exchanges" className="mb-3 text-base font-semibold text-slate-900 dark:text-slate-100">
-            My exchanges
+        <section aria-labelledby="my-activities">
+          <h2 id="my-activities" className="mb-3 text-base font-semibold text-slate-900 dark:text-slate-100">
+            My activities
           </h2>
-          {activeEnrolments.length === 0 ? (
+          {enrolled.length === 0 ? (
             <EmptyState
               title="No enrolments yet"
               description="Enrol in a Level One session or apply for a Level Two programme to get started."
-              action={<LinkButton href="/exchanges" size="sm">Find an exchange</LinkButton>}
+              action={
+                <LinkButton href="/exchanges" size="sm">
+                  Find an activity
+                </LinkButton>
+              }
             />
           ) : (
             <ul className="space-y-3">
-              {activeEnrolments.slice(0, 5).map((enrollment) => (
-                <li key={enrollment.id}>
+              {enrolled.slice(0, 5).map((item) => (
+                <li key={item.activityId}>
                   <Card className="!p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <Link
-                          href={`/exchanges/${enrollment.exchangeId}`}
-                          className="font-semibold text-slate-900 dark:text-slate-100 hover:text-brand-700 dark:hover:text-brand-300 hover:underline"
+                          href={`/exchanges/${item.activityId}`}
+                          className="font-semibold text-slate-900 hover:text-brand-700 hover:underline dark:text-slate-100 dark:hover:text-brand-300"
                         >
-                          {enrollment.exchangeTitle}
+                          {item.activityTitle}
                         </Link>
                         <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                          {titleCase(enrollment.level)} · enrolled {formatDate(enrollment.enrolledAt)}
+                          Attendance {item.attendancePercent === null ? '—' : `${Math.round(item.attendancePercent)}%`} · Assessment average{' '}
+                          {Math.round(item.assessmentAverage)}%
                         </p>
                       </div>
-                      <Badge tone={enrollment.completionStatus}>{titleCase(enrollment.completionStatus)}</Badge>
+                      <Badge tone={item.enrollmentStatus}>{titleCase(item.enrollmentStatus)}</Badge>
                     </div>
                   </Card>
                 </li>
@@ -145,32 +146,38 @@ function DashboardContent() {
         </section>
 
         <section aria-labelledby="my-teams">
-          <h2 id="my-teams" className="mb-3 text-base font-semibold text-slate-900 dark:text-slate-100">My teams</h2>
-          {(teams.data ?? []).length === 0 ? (
+          <h2 id="my-teams" className="mb-3 text-base font-semibold text-slate-900 dark:text-slate-100">
+            My teams
+          </h2>
+          {allTeams.length === 0 ? (
             <EmptyState
               title="You are not on a team yet"
-              description="Inside a Level Two exchange you can create or join a team and start an impact project."
-              action={<LinkButton href="/teams" size="sm" variant="secondary">See teams</LinkButton>}
+              description="Inside a Level Two activity you can create or join a team and start an impact project."
+              action={
+                <LinkButton href="/teams" size="sm" variant="secondary">
+                  See teams
+                </LinkButton>
+              }
             />
           ) : (
             <ul className="space-y-3">
-              {(teams.data ?? []).map((team) => (
-                <li key={team.id}>
+              {allTeams.map((team) => (
+                <li key={team.teamId}>
                   <Card className="!p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <Link href={`/teams/${team.id}`} className="font-semibold text-slate-900 dark:text-slate-100 hover:text-brand-700 dark:hover:text-brand-300 hover:underline">
-                          {team.name}
+                        <Link
+                          href={`/teams/${team.teamId}`}
+                          className="font-semibold text-slate-900 hover:text-brand-700 hover:underline dark:text-slate-100 dark:hover:text-brand-300"
+                        >
+                          {team.teamName}
                         </Link>
                         <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                          {team.exchangeTitle ?? 'Level Two'} · {team.memberCount} member
-                          {team.memberCount === 1 ? '' : 's'}
+                          {team.activityTitle} · {team.memberCount}/{team.maxTeamSize} members
                           {team.mentorName ? ` · mentor ${team.mentorName}` : ''}
                         </p>
                       </div>
-                      <Badge tone={team.impactProjectStatus ?? 'DRAFT'}>
-                        {team.impactProjectStatus ? titleCase(team.impactProjectStatus) : 'No project'}
-                      </Badge>
+                      <Badge tone={team.status}>{titleCase(team.status)}</Badge>
                     </div>
                   </Card>
                 </li>
@@ -181,26 +188,28 @@ function DashboardContent() {
       </div>
 
       <section aria-labelledby="certificates" className="mt-6">
-        <h2 id="certificates" className="mb-3 text-base font-semibold text-slate-900 dark:text-slate-100">My certificates</h2>
-        {(certificates.data ?? []).length === 0 ? (
+        <h2 id="certificates" className="mb-3 text-base font-semibold text-slate-900 dark:text-slate-100">
+          My certificates
+        </h2>
+        {certificates.length === 0 ? (
           <EmptyState
             title="No certificates yet"
-            description="Complete a Level One activity or an approved impact project and your certificate is issued automatically."
+            description="Pass the assessment and attendance thresholds for an activity and your certificate is issued automatically."
           />
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
-            {(certificates.data ?? []).map((certificate) => (
-              <Card key={certificate.id} className="!p-4">
+            {certificates.map((certificate) => (
+              <Card key={certificate.certificateId} className="!p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="font-semibold text-slate-900 dark:text-slate-100">{certificate.title}</p>
+                    <p className="font-semibold text-slate-900 dark:text-slate-100">{certificate.activityTitle}</p>
                     <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                      {certificate.relatedActivityOrProject ?? 'YEP'} · {formatDate(certificate.issueDate)}
+                      {certificate.achievement} · {formatDate(certificate.issueDate)}
                     </p>
                   </div>
                   <Link
-                    href={`/certificates/${certificate.verificationCode}`}
-                    className="shrink-0 text-xs font-semibold text-brand-700 dark:text-brand-300 hover:underline"
+                    href={`/certificates/${certificate.certificateNumber}`}
+                    className="shrink-0 text-xs font-semibold text-brand-700 hover:underline dark:text-brand-300"
                   >
                     Verify
                   </Link>
@@ -216,31 +225,24 @@ function DashboardContent() {
           <Card>
             <CardTitle id="staff">Staff workspace</CardTitle>
             <CardDescription>
-              {(staffProjects.data?.totalElements ?? 0)} impact project
-              {(staffProjects.data?.totalElements ?? 0) === 1 ? '' : 's'} in the pipeline
-              {unread.data && unread.data.pendingApprovals > 0
-                ? `, ${unread.data.pendingApprovals} AI draft(s) waiting for human approval.`
-                : '.'}
+              Manage activities, sessions, assessments and certificates, or review teams and projects.
             </CardDescription>
             <div className="mt-4 flex flex-wrap gap-2">
-              <LinkButton href="/admin" size="sm">Open admin panel</LinkButton>
-              <LinkButton href="/assessments" size="sm" variant="secondary">Assessments</LinkButton>
-              <LinkButton href="/messages" size="sm" variant="secondary">Announcements</LinkButton>
+              <LinkButton href="/assessments" size="sm">
+                Assessments
+              </LinkButton>
+              <LinkButton href="/projects" size="sm" variant="secondary">
+                Projects
+              </LinkButton>
+              {user?.role === 'ADMIN' && (
+                <LinkButton href="/admin" size="sm" variant="secondary">
+                  Admin panel
+                </LinkButton>
+              )}
             </div>
           </Card>
         </section>
       )}
-
-      <p className="mt-8 text-xs text-slate-500 dark:text-slate-400">
-        Quick links:{' '}
-        <Link className="underline" href={withQuery('/exchanges', { level: 'LEVEL_ONE' })}>
-          Level One sessions
-        </Link>{' '}
-        ·{' '}
-        <Link className="underline" href={withQuery('/exchanges', { level: 'LEVEL_TWO' })}>
-          Level Two programmes
-        </Link>
-      </p>
     </>
   );
 }

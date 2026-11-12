@@ -3,20 +3,20 @@
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
 
 import { ApiError, api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { projectSchema, type ProjectValues } from '@/lib/schemas';
-import { formatDate, titleCase } from '@/lib/format';
+import { titleCase } from '@/lib/format';
 import type { Project, Team } from '@/lib/types';
 import { Badge } from '@/components/ui/Badge';
 import { Button, LinkButton } from '@/components/ui/Button';
 import { Card, CardDescription, CardTitle } from '@/components/ui/Card';
 import { Alert, Breadcrumbs, ErrorState, PageHeader, SpinnerRow } from '@/components/ui/Feedback';
-import { Checkbox, Field, Input, Textarea } from '@/components/ui/Form';
+import { Field, Input, Select, Textarea } from '@/components/ui/Form';
 
 export default function TeamDetailPage() {
   const params = useParams<{ id: string }>();
@@ -25,7 +25,8 @@ export default function TeamDetailPage() {
   const queryClient = useQueryClient();
   const { user, isStaff } = useAuth();
   const [notice, setNotice] = useState<string | null>(null);
-  const [editing, setEditing] = useState(false);
+  const [youthId, setYouthId] = useState('');
+  const [mentorId, setMentorId] = useState('');
 
   const teamQuery = useQuery({
     queryKey: ['team', id],
@@ -36,7 +37,7 @@ export default function TeamDetailPage() {
     queryKey: ['team-project', id],
     queryFn: async () => {
       try {
-        return await api<Project>(`/api/v1/teams/${id}/project`);
+        return await api<Project>(`/api/v1/projects/team/${id}`);
       } catch (error) {
         if (error instanceof ApiError && error.status === 404) return null;
         throw error;
@@ -44,14 +45,57 @@ export default function TeamDetailPage() {
     },
   });
 
+  const invalidateTeam = () => {
+    void queryClient.invalidateQueries({ queryKey: ['team', id] });
+    void queryClient.invalidateQueries({ queryKey: ['teams'] });
+  };
+
   const join = useMutation({
-    mutationFn: () => api<Team>(`/api/v1/teams/${id}/join`, { method: 'POST' }),
+    mutationFn: () => api<Team>(`/api/v1/teams/${id}/members`, { method: 'POST', body: {} }),
     onSuccess: () => {
       setNotice('You joined this team.');
-      void queryClient.invalidateQueries({ queryKey: ['team', id] });
-      void queryClient.invalidateQueries({ queryKey: ['teams'] });
+      invalidateTeam();
     },
     onError: (error) => setNotice(error instanceof ApiError ? error.message : 'Could not join this team.'),
+  });
+
+  const addMember = useMutation({
+    mutationFn: () =>
+      api<Team>(`/api/v1/teams/${id}/members`, { method: 'POST', body: { youthId: Number(youthId) } }),
+    onSuccess: () => {
+      setYouthId('');
+      setNotice('Member added.');
+      invalidateTeam();
+    },
+    onError: (error) => setNotice(error instanceof ApiError ? error.message : 'Could not add that member.'),
+  });
+
+  const removeMember = useMutation({
+    mutationFn: (memberId: number) => api<Team>(`/api/v1/teams/${id}/members/${memberId}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      setNotice('Member removed.');
+      invalidateTeam();
+    },
+    onError: (error) => setNotice(error instanceof ApiError ? error.message : 'Could not remove that member.'),
+  });
+
+  const assignMentor = useMutation({
+    mutationFn: () => api<Team>(`/api/v1/teams/${id}/mentor`, { method: 'PUT', body: { mentorId: Number(mentorId) } }),
+    onSuccess: () => {
+      setMentorId('');
+      setNotice('Mentor assigned.');
+      invalidateTeam();
+    },
+    onError: (error) => setNotice(error instanceof ApiError ? error.message : 'Could not assign the mentor.'),
+  });
+
+  const lock = useMutation({
+    mutationFn: () => api<Team>(`/api/v1/teams/${id}/lock`, { method: 'PUT' }),
+    onSuccess: () => {
+      setNotice('Team locked.');
+      invalidateTeam();
+    },
+    onError: (error) => setNotice(error instanceof ApiError ? error.message : 'Could not lock the team.'),
   });
 
   const {
@@ -61,53 +105,34 @@ export default function TeamDetailPage() {
   } = useForm<ProjectValues>({
     resolver: zodResolver(projectSchema),
     defaultValues: {
-      title: projectQuery.data?.title ?? '',
-      problemStatement: projectQuery.data?.problemStatement ?? '',
-      proposedSolution: projectQuery.data?.proposedSolution ?? '',
-      aiAssisted: projectQuery.data?.aiAssisted ?? false,
-      aiUsageNote: projectQuery.data?.aiUsageNote ?? '',
-    },
-    values: {
-      title: projectQuery.data?.title ?? '',
-      problemStatement: projectQuery.data?.problemStatement ?? '',
-      proposedSolution: projectQuery.data?.proposedSolution ?? '',
-      aiAssisted: projectQuery.data?.aiAssisted ?? false,
-      aiUsageNote: projectQuery.data?.aiUsageNote ?? '',
+      teamId: Number(id),
+      title: '',
+      description: '',
+      challengeArea: 'EMPLOYMENT',
+      aiUsed: false,
+      aiUsageDeclaration: '',
     },
   });
 
-  const saveProject = useMutation({
-    mutationFn: (values: ProjectValues) => {
-      const body = {
-        title: values.title,
-        problemStatement: values.problemStatement || null,
-        proposedSolution: values.proposedSolution || null,
-        aiAssisted: values.aiAssisted ?? false,
-        aiUsageNote: values.aiUsageNote || null,
-      };
-      return projectQuery.data
-        ? api<Project>(`/api/v1/projects/${projectQuery.data.id}`, { method: 'PUT', body })
-        : api<Project>(`/api/v1/projects?teamId=${id}`, { method: 'POST', body });
-    },
+  const createProject = useMutation({
+    mutationFn: (values: ProjectValues) =>
+      api<Project>('/api/v1/projects', {
+        method: 'POST',
+        body: {
+          teamId: values.teamId,
+          title: values.title,
+          description: values.description || null,
+          challengeArea: values.challengeArea,
+          aiUsed: values.aiUsed ?? false,
+          aiUsageDeclaration: values.aiUsageDeclaration || null,
+        },
+      }),
     onSuccess: (project) => {
-      setNotice('Project saved.');
-      setEditing(false);
       void queryClient.invalidateQueries({ queryKey: ['team-project', id] });
-      void queryClient.invalidateQueries({ queryKey: ['team', id] });
-      if (!projectQuery.data) router.push(`/projects/${project.id}`);
+      invalidateTeam();
+      router.push(`/projects/${project.projectId}`);
     },
-    onError: (error) => setNotice(error instanceof ApiError ? error.message : 'Could not save the project.'),
-  });
-
-  const submitProject = useMutation({
-    mutationFn: () =>
-      api<Project>(`/api/v1/projects/${projectQuery.data?.id}/submit`, { method: 'POST' }),
-    onSuccess: () => {
-      setNotice('Project submitted for review.');
-      void queryClient.invalidateQueries({ queryKey: ['team-project', id] });
-      void queryClient.invalidateQueries({ queryKey: ['team', id] });
-    },
-    onError: (error) => setNotice(error instanceof ApiError ? error.message : 'Could not submit the project.'),
+    onError: (error) => setNotice(error instanceof ApiError ? error.message : 'Could not create the project.'),
   });
 
   if (teamQuery.isLoading) return <SpinnerRow label="Loading team…" />;
@@ -122,31 +147,24 @@ export default function TeamDetailPage() {
 
   const team = teamQuery.data;
   const project = projectQuery.data ?? null;
-  const isMember = (team.members ?? []).some((member) => member.participantId === user?.id);
-  const canEditProject = !!user && (user.role === 'PARTICIPANT' || user.role === 'ADMIN' || user.role === 'FACILITATOR');
-  const canReview = isStaff;
+  const isMember = team.members.some((member) => member.youthId === user?.userId);
+  const isMentor = team.mentorId === user?.userId;
+  const canManage = isStaff || isMentor;
+  const canWork = isMember || canManage;
 
   return (
     <>
-      <Breadcrumbs
-        items={[
-          { label: 'Home', href: '/' },
-          { label: 'Teams', href: '/teams' },
-          { label: team.name },
-        ]}
-      />
+      <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Teams', href: '/teams' }, { label: team.teamName }]} />
 
       <PageHeader
-        title={team.name}
-        description={team.description || team.exchangeTitle || 'Level Two team'}
+        title={team.teamName}
+        description={`${team.activityTitle} · ${team.memberCount}/${team.maxTeamSize} members`}
         actions={
           <>
-            {team.levelTwoExchangeId && (
-              <LinkButton href={`/exchanges/${team.levelTwoExchangeId}`} size="sm" variant="secondary">
-                {team.exchangeTitle ?? 'Open exchange'}
-              </LinkButton>
-            )}
-            {user?.role === 'PARTICIPANT' && !isMember && (
+            <LinkButton href={`/exchanges/${team.activityId}`} size="sm" variant="secondary">
+              Open activity
+            </LinkButton>
+            {user?.role === 'PARTICIPANT' && !isMember && team.status !== 'LOCKED' && (
               <Button size="sm" loading={join.isPending} onClick={() => join.mutate()}>
                 Join this team
               </Button>
@@ -164,137 +182,124 @@ export default function TeamDetailPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         <section className="space-y-4 lg:col-span-2">
           <Card>
-            <CardTitle>Members ({team.memberCount})</CardTitle>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <CardTitle>Members ({team.memberCount})</CardTitle>
+                <CardDescription>Team size must reach {team.minTeamSize} before it can be locked.</CardDescription>
+              </div>
+              <Badge tone={team.status}>{titleCase(team.status)}</Badge>
+            </div>
             <ul className="mt-3 divide-y divide-slate-100 dark:divide-slate-700">
-              {(team.members ?? []).map((member) => (
-                <li key={`${member.participantId}-${member.memberRole}`} className="flex items-center justify-between gap-3 py-2.5">
+              {team.members.map((member) => (
+                <li key={member.memberId} className="flex items-center justify-between gap-3 py-2.5">
                   <div>
-                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{member.fullName ?? 'Participant'}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Joined {formatDate(member.joinedAt)}</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{member.name}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{member.email}</p>
                   </div>
-                  <Badge tone={member.memberRole === 'LEAD' ? 'LEVEL_TWO' : 'DRAFT'}>
-                    {titleCase(member.memberRole)}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge tone={member.role === 'LEADER' ? 'APPROVED' : 'DRAFT'}>{titleCase(member.role)}</Badge>
+                    {canManage && team.status !== 'LOCKED' && member.youthId !== user?.userId && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        loading={removeMember.isPending}
+                        onClick={() => removeMember.mutate(member.youthId)}
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
+
+            {canManage && team.status !== 'LOCKED' && (
+              <form
+                className="mt-4 flex flex-wrap items-end gap-2 border-t border-slate-100 pt-4 dark:border-slate-800"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (youthId) addMember.mutate();
+                }}
+              >
+                <Field label="Add participant by user ID" htmlFor="youth-id">
+                  <Input
+                    id="youth-id"
+                    type="number"
+                    min={1}
+                    value={youthId}
+                    onChange={(event) => setYouthId(event.target.value)}
+                    placeholder="e.g. 12"
+                  />
+                </Field>
+                <Button type="submit" size="sm" loading={addMember.isPending} disabled={!youthId}>
+                  Add member
+                </Button>
+              </form>
+            )}
           </Card>
 
           <Card>
             <div className="flex items-start justify-between gap-3">
               <div>
                 <CardTitle>Impact project</CardTitle>
-                <CardDescription>
-                  The team&apos;s solution to a real problem, reviewed by a human facilitator.
-                </CardDescription>
+                <CardDescription>The team&apos;s solution to a real community problem.</CardDescription>
               </div>
               {project && <Badge tone={project.status}>{titleCase(project.status)}</Badge>}
             </div>
 
             {projectQuery.isLoading ? (
               <SpinnerRow label="Loading project…" />
-            ) : !project ? (
-              canEditProject ? (
-                <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
-                  No project yet. Fill in the first draft below - save it as often as you like before submitting.
-                </p>
-              ) : (
-                <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">This team has not started a project yet.</p>
-              )
-            ) : (
+            ) : project ? (
               <div className="mt-3 space-y-3">
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{project.title}</h3>
-                  <p className="mt-1 whitespace-pre-line text-sm text-slate-700 dark:text-slate-200">
-                    <strong className="text-slate-900 dark:text-slate-100">Problem: </strong>
-                    {project.problemStatement || 'Not documented yet.'}
-                  </p>
-                  <p className="mt-2 whitespace-pre-line text-sm text-slate-700 dark:text-slate-200">
-                    <strong className="text-slate-900 dark:text-slate-100">Proposed solution: </strong>
-                    {project.proposedSolution || 'Not documented yet.'}
-                  </p>
-                  {project.aiAssisted && (
-                    <p className="mt-2 rounded-lg bg-amber-50 dark:bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
-                      AI was used in drafting this project: {project.aiUsageNote || 'no note given'}.
-                      A human reviewer still checked it.
-                    </p>
-                  )}
-                </div>
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{project.title}</h3>
+                <p className="text-sm text-slate-700 dark:text-slate-200">{project.description || 'No description yet.'}</p>
                 <div className="flex flex-wrap gap-2">
-                  <LinkButton href={`/projects/${project.id}`} size="sm" variant="secondary">
+                  <LinkButton href={`/projects/${project.projectId}`} size="sm" variant="secondary">
                     Open project
                   </LinkButton>
-                  {canEditProject && ['DRAFT', 'REJECTED'].includes(project.status) && (
-                    <>
-                      <Button size="sm" variant="secondary" onClick={() => setEditing((value) => !value)}>
-                        {editing ? 'Close editor' : 'Edit draft'}
-                      </Button>
-                      <Button size="sm" loading={submitProject.isPending} onClick={() => submitProject.mutate()}>
-                        Submit for review
-                      </Button>
-                    </>
-                  )}
-                  {canReview && project.status === 'UNDER_REVIEW' && (
-                    <LinkButton href={`/projects/${project.id}`} size="sm">
-                      Review it
-                    </LinkButton>
+                  {project.milestones.length < 2 && canWork && (
+                    <span className="text-xs text-slate-500 dark:text-slate-400">Add at least two milestones before submitting.</span>
                   )}
                 </div>
-                {project.reviewFeedback && (
-                  <p className="rounded-lg bg-slate-50 dark:bg-slate-800/60 px-3 py-2 text-sm text-slate-700 dark:text-slate-200">
-                    <strong>Reviewer feedback: </strong>
-                    {project.reviewFeedback}
-                  </p>
-                )}
               </div>
-            )}
-
-            {(canEditProject && (!project || editing)) && (
-              <form
-                className="mt-5 space-y-4 border-t border-slate-100 dark:border-slate-800 pt-4"
-                onSubmit={handleSubmit((values) => saveProject.mutate(values))}
-                noValidate
-              >
+            ) : canWork ? (
+              <form className="mt-4 space-y-4" onSubmit={handleSubmit((values) => createProject.mutate(values))} noValidate>
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  Start the project draft. You can add milestones and submit it for review from the project page.
+                </p>
                 <Field label="Project title" htmlFor="project-title" error={errors.title?.message} required>
                   <Input id="project-title" invalid={!!errors.title} {...register('title')} />
                 </Field>
-
-                <Field
-                  label="Problem statement"
-                  htmlFor="problem"
-                  error={errors.problemStatement?.message}
-                  hint="What real problem does your community face?"
-                >
-                  <Textarea id="problem" rows={4} {...register('problemStatement')} />
+                <Field label="Description" htmlFor="project-description" error={errors.description?.message}>
+                  <Textarea id="project-description" rows={3} {...register('description')} />
                 </Field>
-
-                <Field
-                  label="Proposed solution"
-                  htmlFor="solution"
-                  error={errors.proposedSolution?.message}
-                  hint="What will your team build or change?"
-                >
-                  <Textarea id="solution" rows={4} {...register('proposedSolution')} />
+                <Field label="Challenge area" htmlFor="challenge-area" error={errors.challengeArea?.message} required>
+                  <Select id="challenge-area" {...register('challengeArea')}>
+                    {['EMPLOYMENT', 'EDUCATION', 'AGRICULTURE', 'HEALTH', 'CLIMATE_CHANGE', 'DIGITAL_INCLUSION'].map((area) => (
+                      <option key={area} value={area}>
+                        {titleCase(area)}
+                      </option>
+                    ))}
+                  </Select>
                 </Field>
-
-                <Checkbox
-                  label="We used AI tools while drafting this project"
-                  {...register('aiAssisted')}
-                />
-
-                <Field
-                  label="How was AI used?"
-                  htmlFor="ai-note"
-                  error={errors.aiUsageNote?.message}
-                  hint="Disclose any AI assistance - it is required for responsible AI review"
-                >
-                  <Textarea id="ai-note" rows={2} {...register('aiUsageNote')} />
+                <label className="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-300">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-600 dark:border-slate-600 dark:bg-slate-800"
+                    {...register('aiUsed')}
+                  />
+                  <span>We used AI tools while drafting this project</span>
+                </label>
+                <Field label="How was AI used?" htmlFor="ai-declaration" error={errors.aiUsageDeclaration?.message}>
+                  <Textarea id="ai-declaration" rows={2} {...register('aiUsageDeclaration')} />
                 </Field>
-
-                <Button type="submit" loading={isSubmitting || saveProject.isPending}>
-                  {project ? 'Save changes' : 'Create project'}
+                <input type="hidden" {...register('teamId')} />
+                <Button type="submit" loading={isSubmitting || createProject.isPending}>
+                  Create project
                 </Button>
               </form>
+            ) : (
+              <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">This team has not started a project yet.</p>
             )}
           </Card>
         </section>
@@ -304,47 +309,81 @@ export default function TeamDetailPage() {
             <CardTitle>Team details</CardTitle>
             <dl className="mt-3 space-y-2 text-sm">
               <div className="flex justify-between gap-3">
-                <dt className="text-slate-500 dark:text-slate-400">Created</dt>
-                <dd className="font-medium text-slate-800 dark:text-slate-200">{formatDate(team.createdAt)}</dd>
-              </div>
-              <div className="flex justify-between gap-3">
-                <dt className="text-slate-500 dark:text-slate-400">Exchange</dt>
+                <dt className="text-slate-500 dark:text-slate-400">Activity</dt>
                 <dd className="text-right font-medium text-slate-800 dark:text-slate-200">
-                  {team.levelTwoExchangeId ? (
-                    <Link className="text-brand-700 dark:text-brand-300 hover:underline" href={`/exchanges/${team.levelTwoExchangeId}`}>
-                      {team.exchangeTitle ?? 'Level Two programme'}
-                    </Link>
-                  ) : (
-                    '—'
-                  )}
+                  <Link className="text-brand-700 hover:underline dark:text-brand-300" href={`/exchanges/${team.activityId}`}>
+                    {team.activityTitle}
+                  </Link>
                 </dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-slate-500 dark:text-slate-400">Mentor</dt>
-                <dd className="font-medium text-slate-800 dark:text-slate-200">{team.mentorName ?? 'Not assigned yet'}</dd>
+                <dt className="text-slate-500 dark:text-slate-400">Created by</dt>
+                <dd className="font-medium text-slate-800 dark:text-slate-200">{team.createdByName}</dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-slate-500 dark:text-slate-400">Members</dt>
-                <dd className="font-medium text-slate-800 dark:text-slate-200">{team.memberCount}</dd>
+                <dt className="text-slate-500 dark:text-slate-400">Mentor</dt>
+                <dd className="font-medium text-slate-800 dark:text-slate-200">{team.mentorName ?? 'Not assigned'}</dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-slate-500 dark:text-slate-400">Size</dt>
+                <dd className="font-medium text-slate-800 dark:text-slate-200">
+                  {team.memberCount} / {team.maxTeamSize}
+                </dd>
               </div>
             </dl>
           </Card>
+
+          {canManage && (
+            <Card>
+              <CardTitle>Manage team</CardTitle>
+              <div className="mt-3 space-y-3">
+                <form
+                  className="flex items-end gap-2"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    if (mentorId) assignMentor.mutate();
+                  }}
+                >
+                  <Field label="Mentor user ID" htmlFor="mentor-id">
+                    <Input
+                      id="mentor-id"
+                      type="number"
+                      min={1}
+                      value={mentorId}
+                      onChange={(event) => setMentorId(event.target.value)}
+                      placeholder="e.g. 7"
+                    />
+                  </Field>
+                  <Button type="submit" size="sm" loading={assignMentor.isPending} disabled={!mentorId}>
+                    Assign
+                  </Button>
+                </form>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  loading={lock.isPending}
+                  disabled={team.status === 'LOCKED' || team.memberCount < team.minTeamSize}
+                  onClick={() => lock.mutate()}
+                >
+                  {team.status === 'LOCKED' ? 'Team locked' : 'Lock team'}
+                </Button>
+                {team.memberCount < team.minTeamSize && (
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Add {team.minTeamSize - team.memberCount} more member(s) before locking.
+                  </p>
+                )}
+              </div>
+            </Card>
+          )}
 
           <Card>
             <CardTitle>Next steps</CardTitle>
             <ul className="mt-3 space-y-2 text-sm text-slate-700 dark:text-slate-200">
               <li>1. Agree on a problem worth solving.</li>
-              <li>2. Draft and submit your impact project.</li>
-              <li>3. Iterate on reviewer feedback.</li>
-              <li>4. Complete the project to unlock your certificate.</li>
+              <li>2. Create the project and add at least two milestones.</li>
+              <li>3. Submit for review and respond to feedback.</li>
+              <li>4. Complete the project to unlock certificates.</li>
             </ul>
-            {!isMember && user?.role === 'PARTICIPANT' && (
-              <div className="mt-4">
-                <Button size="sm" loading={join.isPending} onClick={() => join.mutate()}>
-                  Join this team
-                </Button>
-              </div>
-            )}
           </Card>
         </aside>
       </div>

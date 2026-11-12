@@ -14,12 +14,13 @@ interface FieldProps {
   error?: string;
   hint?: string;
   required?: boolean;
+  className?: string;
   children: ReactNode;
 }
 
-export function Field({ label, htmlFor, error, hint, required, children }: FieldProps) {
+export function Field({ label, htmlFor, error, hint, required, className = '', children }: FieldProps) {
   return (
-    <div className="space-y-1.5">
+    <div className={`space-y-1.5 ${className}`.trim()}>
       <label htmlFor={htmlFor} className="block text-sm font-medium text-slate-800 dark:text-slate-200">
         {label}
         {required && (
