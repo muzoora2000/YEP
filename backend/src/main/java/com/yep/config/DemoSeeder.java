@@ -37,6 +37,7 @@ import com.yep.domain.learning.VirtualSession;
 import com.yep.domain.project.ImpactProject;
 import com.yep.domain.project.Milestone;
 import com.yep.domain.project.Team;
+import com.yep.domain.user.Administrator;
 import com.yep.domain.user.Facilitator;
 import com.yep.domain.user.Mentor;
 import com.yep.domain.user.PartnerOrganisation;
@@ -62,6 +63,7 @@ import com.yep.repository.YouthParticipantRepository;
  * Idempotent: will not seed if users already exist beyond the initial admin.
  *
  * Demo accounts (password for all: Demo1234!):
+ *   admin@yep.demo       – Administrator
  *   facilitator@yep.demo – Facilitator
  *   mentor@yep.demo      – Mentor
  *   alice@yep.demo       – Participant (Uganda, Level-Two-eligible)
@@ -133,6 +135,15 @@ public class DemoSeeder {
         log.info("Demo: seeding demo data…");
 
         String hash = passwordEncoder.encode("Demo1234!");
+
+        // ---- Administrator ----
+        Administrator admin = new Administrator();
+        admin.setName("YEP Demo Administrator");
+        admin.setEmail("admin@yep.demo");
+        admin.setPassword(hash);
+        admin.setStatus(AccountStatus.ACTIVE);
+        admin.setDepartment("Programme");
+        userRepository.save(admin);
 
         // ---- Facilitator ----
         Facilitator facilitator = new Facilitator();
