@@ -126,6 +126,36 @@ class AuthFlowTest {
     }
 
     @Test
+    void adminCanListUsersWithAndWithoutFilters() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(facilitatorJson("list-fac@yep.test")))
+                .andExpect(status().isCreated());
+
+        String adminToken = login("admin@yep.test", "Admin1234");
+
+        mockMvc.perform(get("/api/v1/admin/users").header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items").isArray())
+                .andExpect(jsonPath("$.totalItems").value(2));
+
+        mockMvc.perform(get("/api/v1/admin/users").param("status", "PENDING")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].status").value("PENDING"));
+
+        mockMvc.perform(get("/api/v1/admin/users").param("role", "FACILITATOR")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].role").value("FACILITATOR"));
+
+        mockMvc.perform(get("/api/v1/admin/users").param("q", "list-fac")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalItems").value(1));
+    }
+
+    @Test
     void usersEndpointAllowsSelfButForbidsOthers() throws Exception {
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)

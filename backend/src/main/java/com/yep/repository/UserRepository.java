@@ -33,10 +33,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("""
             select u from User u
-            where (:role is null or u.role = :role)
-              and (:status is null or u.status = :status)
-              and (:query is null or lower(u.name) like lower(concat('%', :query, '%'))
-                   or lower(u.email) like lower(concat('%', :query, '%')))
+            where u.role = coalesce(:role, u.role)
+              and u.status = coalesce(:status, u.status)
+              and (lower(u.name) like lower(concat('%', coalesce(:query, ''), '%'))
+                   or lower(u.email) like lower(concat('%', coalesce(:query, ''), '%')))
             """)
     Page<User> search(@Param("role") Role role, @Param("status") AccountStatus status,
             @Param("query") String query, Pageable pageable);
