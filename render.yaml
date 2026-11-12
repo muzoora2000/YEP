@@ -8,7 +8,7 @@ services:
     autoDeploy: true
     envVars:
       - key: SPRING_PROFILES_ACTIVE
-        value: prod
+        value: prod,demo
       - key: DB_URL
         sync: false
       - key: DB_USER
@@ -22,9 +22,9 @@ services:
       - key: JWT_EXPIRY_HOURS
         value: "8"
       - key: FRONTEND_URL
-        sync: false
+        value: https://frontend-odh3.vercel.app
       - key: ALLOWED_ORIGINS
-        sync: false
+        value: https://frontend-odh3.vercel.app
       - key: ADMIN_EMAIL
         sync: false
       - key: ADMIN_PASSWORD
