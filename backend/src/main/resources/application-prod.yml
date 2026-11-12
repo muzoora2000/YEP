@@ -19,6 +19,8 @@ spring:
     password: ${DB_PASSWORD}
     locations: classpath:db/migration
     validate-on-migrate: true
+    clean-disabled: false
+    clean-on-validation-error: true
   mail:
     host: ${MAIL_HOST:}
     port: ${MAIL_PORT:587}
