@@ -28,11 +28,17 @@ const organisationTypes = [
   { value: 'TECH_COMPANY', label: 'Tech company' },
 ] as const;
 
+const COUNTRIES = [
+  'Uganda', 'Kenya', 'Tanzania', 'Rwanda', 'Burundi',
+  'South Sudan', 'DR Congo', 'Somalia', 'Ethiopia', 'Djibouti', 'Other',
+];
+
 export default function RegisterPage() {
   const { register: signUp } = useAuth();
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
 
   const {
     register,
@@ -55,7 +61,7 @@ export default function RegisterPage() {
     setServerError(null);
     setFieldErrors({});
     try {
-      await signUp({
+      const created = await signUp({
         name: values.name,
         email: values.email,
         password: values.password,
@@ -76,6 +82,10 @@ export default function RegisterPage() {
         website: values.role === 'PARTNER' ? values.website : undefined,
         description: values.role === 'PARTNER' ? values.description : undefined,
       });
+      if (created.status === 'PENDING') {
+        setPendingMessage(created.message);
+        return;
+      }
       router.push('/dashboard');
     } catch (error) {
       if (error instanceof ApiError) {
@@ -85,6 +95,26 @@ export default function RegisterPage() {
         setServerError('Registration failed. Please try again.');
       }
     }
+  }
+
+  if (pendingMessage) {
+    return (
+      <div className="mx-auto max-w-md">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Registration received</h1>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{pendingMessage}</p>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+            You can sign in once an administrator approves your account.
+          </p>
+          <Link
+            href="/login"
+            className="mt-4 inline-block font-semibold text-brand-700 hover:underline dark:text-brand-300"
+          >
+            Back to sign in
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -136,8 +166,20 @@ export default function RegisterPage() {
             />
           </Field>
 
-          <Field label="Country" htmlFor="country" error={errors.country?.message ?? fieldErrors.country}>
-            <Input id="country" autoComplete="country-name" placeholder="Uganda" {...register('country')} />
+          <Field
+            label="Country"
+            htmlFor="country"
+            error={errors.country?.message ?? fieldErrors.country}
+            required={role === 'PARTICIPANT' || role === 'PARTNER'}
+          >
+            <Select id="country" invalid={!!errors.country} {...register('country')}>
+              <option value="">Select a country</option>
+              {COUNTRIES.map((country) => (
+                <option key={country} value={country}>
+                  {country}
+                </option>
+              ))}
+            </Select>
           </Field>
 
           <Field label="Phone (optional)" htmlFor="phone">

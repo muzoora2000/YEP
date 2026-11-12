@@ -23,7 +23,15 @@ export const registerSchema = z
     role: z.enum(['PARTICIPANT', 'FACILITATOR', 'MENTOR', 'PARTNER']),
     country: z.string().max(80).optional(),
     phone: z.string().max(30).optional(),
-    age: z.coerce.number().int().min(18, 'Participants must be 18 or older').max(35, 'Participants must be 35 or younger').optional(),
+    age: z.preprocess(
+      (value) => (value === '' || value === null ? undefined : value),
+      z.coerce
+        .number()
+        .int()
+        .min(18, 'Participants must be 18 or older')
+        .max(35, 'Participants must be 35 or younger')
+        .optional(),
+    ),
     digitalSkills: z.string().max(80).optional(),
     institution: z.string().max(190).optional(),
     bio: z.string().max(1000).optional(),
@@ -48,6 +56,10 @@ export const registerSchema = z
   .refine((values) => values.role !== 'PARTNER' || !!values.organisationName, {
     path: ['organisationName'],
     message: 'Organisation name is required for partners',
+  })
+  .refine((values) => (values.role !== 'PARTICIPANT' && values.role !== 'PARTNER') || !!values.country?.trim(), {
+    path: ['country'],
+    message: 'Select your country',
   });
 
 export type RegisterValues = z.infer<typeof registerSchema>;
